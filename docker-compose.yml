@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  trrbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trrbot-ts-bolt
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - trrbot-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  trrbot-data:
+    name: trrbot-data

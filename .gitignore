@@ -1,0 +1,35 @@
+# 環境変数
+.env
+.env.*
+!.env.example
+
+# 依存関係
+node_modules
+
+# ビルド成果物
+dist
+
+# テスト関連
+coverage
+
+# エディタ設定
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS関連
+.DS_Store
+Thumbs.db
+
+data
+
+*.local.md
+
+.clinerules
+.roo
+.rooignore
