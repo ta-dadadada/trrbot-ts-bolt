@@ -1,6 +1,7 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { GroupService } from '../services/groupService';
 import { shuffleArray } from '../utils/random';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
  * グループ内のアイテムをランダムに並び替えるコマンドの実装
@@ -8,7 +9,7 @@ import { shuffleArray } from '../utils/random';
 export class GroupShuffleCommand implements Command {
   name = 'gshuffle';
   description = '指定されたグループ内のアイテムをランダムに並び替えて順序付けて返します';
-  examples = ['@trrbot gshuffle グループ名'];
+  examples = [`${BOT_MENTION_NAME} gshuffle グループ名`];
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args } = context;
@@ -17,7 +18,7 @@ export class GroupShuffleCommand implements Command {
     // グループ名が指定されていない場合はエラーメッセージを表示
     if (args.length === 0) {
       await say({
-        text: 'グループ名を指定してください。\n例: `@trrbot gshuffle グループ名`',
+        text: `グループ名を指定してください。\n例: \`${BOT_MENTION_NAME} gshuffle グループ名\``,
         ...(threadTs && { thread_ts: threadTs }),
       });
       return;

@@ -1,5 +1,6 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { getRandomString } from '../utils/random';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
  * ランダムな文字列を生成するコマンドの実装
@@ -7,7 +8,7 @@ import { getRandomString } from '../utils/random';
 export class ZakoSecretCommand implements Command {
   name = 'zako-secret';
   description = '指定された長さのランダムな英数字文字列を生成します';
-  examples = ['@trrbot zako-secret 10', '@trrbot zako-secret 20'];
+  examples = [`${BOT_MENTION_NAME} zako-secret 10`, `${BOT_MENTION_NAME} zako-secret 20`];
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args, logger } = context;

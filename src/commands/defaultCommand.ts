@@ -1,5 +1,6 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { getRandomItem } from '../utils/random';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
  * デフォルトコマンドの実装
@@ -8,7 +9,7 @@ import { getRandomItem } from '../utils/random';
 export class DefaultCommand implements Command {
   name = 'default';
   description = '未知のコマンドが入力された場合、入力されたテキスト全体を選択肢として扱います';
-  examples = ['@trrbot 選択肢1 選択肢2 選択肢3'];
+  examples = [`${BOT_MENTION_NAME} 選択肢1 選択肢2 選択肢3`];
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say } = context;

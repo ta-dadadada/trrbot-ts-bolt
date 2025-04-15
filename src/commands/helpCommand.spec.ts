@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { HelpCommand } from './helpCommand';
 import { CommandContext } from './types';
 import { WebClient } from '@slack/web-api';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 describe('HelpCommand', () => {
   it('should generate help text dynamically based on available commands', async () => {
@@ -10,26 +11,26 @@ describe('HelpCommand', () => {
       {
         name: 'choice',
         description: '指定された選択肢からランダムに1つ選びます',
-        examples: ['@trrbot choice ラーメン カレー 寿司']
+        examples: [`${BOT_MENTION_NAME} choice ラーメン カレー 寿司`]
       },
       {
         name: 'groupChoice',
         description: '指定されたグループからランダムに1つのアイテムを選びます',
-        examples: ['@trrbot groupChoice 食べ物']
+        examples: [`${BOT_MENTION_NAME} groupChoice 食べ物`]
       },
       {
         name: 'reaction',
         description: 'リアクションマッピングを管理します',
         examples: [
-          '@trrbot reaction list',
-          '@trrbot reaction add トリガー :emoji:',
-          '@trrbot reaction remove トリガー :emoji:'
+          `${BOT_MENTION_NAME} reaction list`,
+          `${BOT_MENTION_NAME} reaction add トリガー :emoji:`,
+          `${BOT_MENTION_NAME} reaction remove トリガー :emoji:`
         ]
       },
       {
         name: 'help',
         description: 'このヘルプメッセージを表示します',
-        examples: ['@trrbot help']
+        examples: [`${BOT_MENTION_NAME} help`]
       }
     ];
 
@@ -45,7 +46,7 @@ describe('HelpCommand', () => {
     // モックのコンテキストを作成
     const mockContext: CommandContext = {
       event: {
-        text: '@trrbot help',
+        text: `${BOT_MENTION_NAME} help`,
         ts: '1234567890.123456',
       },
       say: mockSay,
@@ -71,20 +72,20 @@ describe('HelpCommand', () => {
     // 各コマンドの情報がヘルプテキストに含まれていることを確認
     expect(helpText).toContain('*choice*');
     expect(helpText).toContain('指定された選択肢からランダムに1つ選びます');
-    expect(helpText).toContain('@trrbot choice ラーメン カレー 寿司');
+    expect(helpText).toContain(`${BOT_MENTION_NAME} choice ラーメン カレー 寿司`);
 
     expect(helpText).toContain('*gc*');
     expect(helpText).toContain('指定されたグループからランダムに1つのアイテムを選びます');
-    expect(helpText).toContain('@trrbot gc 食べ物');
+    expect(helpText).toContain(`${BOT_MENTION_NAME} gc 食べ物`);
 
     expect(helpText).toContain('*reaction*');
     expect(helpText).toContain('リアクションマッピングを管理します');
-    expect(helpText).toContain('@trrbot reaction list');
-    expect(helpText).toContain('@trrbot reaction add トリガー :emoji:');
-    expect(helpText).toContain('@trrbot reaction remove トリガー :emoji:');
+    expect(helpText).toContain(`${BOT_MENTION_NAME} reaction list`);
+    expect(helpText).toContain(`${BOT_MENTION_NAME} reaction add トリガー :emoji:`);
+    expect(helpText).toContain(`${BOT_MENTION_NAME} reaction remove トリガー :emoji:`);
 
     expect(helpText).toContain('*help*');
     expect(helpText).toContain('このヘルプメッセージを表示します');
-    expect(helpText).toContain('@trrbot help');
+    expect(helpText).toContain(`${BOT_MENTION_NAME} help`);
   });
 });

@@ -1,5 +1,6 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { GroupService } from '../services/groupService';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
  * グループコマンドの実装
@@ -8,13 +9,13 @@ export class GroupCommand implements Command {
   name = 'group';
   description = 'グループを管理します';
   examples = [
-    '@trrbot group list',
-    '@trrbot group create グループ名',
-    '@trrbot group delete グループ名',
-    '@trrbot group items グループ名',
-    '@trrbot group add グループ名 アイテム',
-    '@trrbot group remove グループ名 アイテム',
-    '@trrbot group clear グループ名'
+    `${BOT_MENTION_NAME} group list`,
+    `${BOT_MENTION_NAME} group create グループ名`,
+    `${BOT_MENTION_NAME} group delete グループ名`,
+    `${BOT_MENTION_NAME} group items グループ名`,
+    `${BOT_MENTION_NAME} group add グループ名 アイテム`,
+    `${BOT_MENTION_NAME} group remove グループ名 アイテム`,
+    `${BOT_MENTION_NAME} group clear グループ名`
   ];
 
   async execute(context: CommandContext): Promise<void> {

@@ -1,5 +1,6 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { getRandomStringWithSymbols } from '../utils/random';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
  * 記号を含むランダムな文字列を生成するコマンドの実装
@@ -7,7 +8,7 @@ import { getRandomStringWithSymbols } from '../utils/random';
 export class SecretCommand implements Command {
   name = 'secret';
   description = '指定された長さのランダムな英数字と記号を含む文字列を生成します';
-  examples = ['@trrbot secret 10', '@trrbot secret 20'];
+  examples = [`${BOT_MENTION_NAME} secret 10`, `${BOT_MENTION_NAME} secret 20`];
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args, logger } = context;

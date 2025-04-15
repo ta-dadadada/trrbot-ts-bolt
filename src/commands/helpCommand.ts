@@ -1,4 +1,5 @@
 import { Command, CommandContext, getThreadTs } from './types';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
  * ヘルプコマンドの実装
@@ -6,7 +7,7 @@ import { Command, CommandContext, getThreadTs } from './types';
 export class HelpCommand implements Command {
   name = 'help';
   description = 'このヘルプメッセージを表示します';
-  examples = ['@trrbot help'];
+  examples = [`${BOT_MENTION_NAME} help`];
   
   // 外部から注入されるコマンド一覧
   private commands: Command[] = [];
@@ -38,7 +39,7 @@ export class HelpCommand implements Command {
           // 例からサブコマンドとパラメータを抽出
           const parts = example.split(' ');
           if (parts.length >= 3) {
-            const subCommand = parts[2]; // @trrbot command subcommand
+            const subCommand = parts[2]; // BOT_MENTION_NAME command subcommand
             const params = parts.slice(3).join(' ');
             helpText += `  - \`${example}\` - `;
             

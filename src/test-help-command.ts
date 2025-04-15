@@ -2,6 +2,7 @@ import { HelpCommand } from './commands/helpCommand';
 import { CommandContext } from './commands/types';
 import { Logger } from '@slack/bolt';
 import { WebClient } from '@slack/web-api';
+import { BOT_MENTION_NAME } from './config/constants';
 
 /**
  * ヘルプコマンドのテスト用スクリプト
@@ -13,7 +14,7 @@ async function testHelpCommand(): Promise<void> {
   // モックのコンテキストを作成
   const mockContext: CommandContext = {
     event: {
-      text: '@trrbot help',
+      text: `${BOT_MENTION_NAME} help`,
       ts: '1234567890.123456',
     },
     say: async (message) => {

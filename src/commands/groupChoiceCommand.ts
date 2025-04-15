@@ -1,5 +1,6 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { GroupService } from '../services/groupService';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
  * グループからランダムにアイテムを選ぶコマンドの実装
@@ -7,7 +8,7 @@ import { GroupService } from '../services/groupService';
 export class GroupChoiceCommand implements Command {
   name = 'gc';
   description = '指定されたグループからランダムに1つのアイテムを選びます';
-  examples = ['@trrbot gc 食べ物'];
+  examples = [`${BOT_MENTION_NAME} gc 食べ物`];
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args } = context;

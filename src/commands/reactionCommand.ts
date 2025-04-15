@@ -1,6 +1,7 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { ReactionService } from '../services/reactionService';
 import { FilesUploadV2Arguments } from '@slack/web-api';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
  * リアクションコマンドの実装
@@ -9,9 +10,9 @@ export class ReactionCommand implements Command {
   name = 'reaction';
   description = 'リアクションマッピングを管理します';
   examples = [
-    '@trrbot reaction export',
-    '@trrbot reaction add トリガー :emoji:',
-    '@trrbot reaction remove トリガー :emoji:'
+    `${BOT_MENTION_NAME} reaction export`,
+    `${BOT_MENTION_NAME} reaction add トリガー :emoji:`,
+    `${BOT_MENTION_NAME} reaction remove トリガー :emoji:`
   ];
 
   async execute(context: CommandContext): Promise<void> {

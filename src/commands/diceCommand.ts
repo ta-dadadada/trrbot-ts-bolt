@@ -1,5 +1,6 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { getRandomInt } from '../utils/random';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
  * サイコロを振るコマンドの実装
@@ -7,7 +8,7 @@ import { getRandomInt } from '../utils/random';
 export class DiceCommand implements Command {
   name = 'dice';
   description = 'サイコロを振って、ランダムな数字を返します';
-  examples = ['@trrbot dice', '@trrbot dice 10', '@trrbot 2d6', '@trrbot 3d10'];
+  examples = [`${BOT_MENTION_NAME} dice`, `${BOT_MENTION_NAME} dice 10`, `${BOT_MENTION_NAME} 2d6`, `${BOT_MENTION_NAME} 3d10`];
 
   /**
    * ダイスコード（例: 2d6）を解析する
@@ -62,7 +63,7 @@ export class DiceCommand implements Command {
       const commandNameDiceCode = this.parseDiceCode(commandName);
       
       if (commandNameDiceCode) {
-        // コマンド名がダイスコード形式の場合（例: @trrbot 2d6）
+        // コマンド名がダイスコード形式の場合（例: BOT_MENTION_NAME 2d6）
         const [diceCount, diceFaces] = commandNameDiceCode;
         const { results, total } = this.rollMultipleDice(diceCount, diceFaces);
         
@@ -78,7 +79,7 @@ export class DiceCommand implements Command {
         const argDiceCode = this.parseDiceCode(args[0]);
         
         if (argDiceCode) {
-          // 引数がダイスコード形式の場合（例: @trrbot dice 2d6）
+          // 引数がダイスコード形式の場合（例: BOT_MENTION_NAME dice 2d6）
           const [diceCount, diceFaces] = argDiceCode;
           const { results, total } = this.rollMultipleDice(diceCount, diceFaces);
           

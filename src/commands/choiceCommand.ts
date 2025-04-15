@@ -1,5 +1,6 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { getRandomItem } from '../utils/random';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
  * 選択肢からランダムに1つを選ぶコマンドの実装
@@ -7,7 +8,7 @@ import { getRandomItem } from '../utils/random';
 export class ChoiceCommand implements Command {
   name = 'choice';
   description = '指定された選択肢からランダムに1つ選びます';
-  examples = ['@trrbot choice ラーメン カレー 寿司'];
+  examples = [`${BOT_MENTION_NAME} choice ラーメン カレー 寿司`];
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args } = context;

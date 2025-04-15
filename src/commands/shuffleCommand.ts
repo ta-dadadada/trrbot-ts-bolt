@@ -1,5 +1,6 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { shuffleArray } from '../utils/random';
+import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
  * 指定された項目をランダムに並び替えるコマンドの実装
@@ -7,7 +8,7 @@ import { shuffleArray } from '../utils/random';
 export class ShuffleCommand implements Command {
   name = 'shuffle';
   description = '指定された項目をランダムに並び替えて順序付けて返します';
-  examples = ['@trrbot shuffle A B C D', '@trrbot shuffle 項目1 項目2 項目3'];
+  examples = [`${BOT_MENTION_NAME} shuffle A B C D`, `${BOT_MENTION_NAME} shuffle 項目1 項目2 項目3`];
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args } = context;
@@ -16,7 +17,7 @@ export class ShuffleCommand implements Command {
     // 引数が2つ未満の場合はエラーメッセージを表示
     if (args.length < 2) {
       await say({
-        text: '並び替える項目を2つ以上指定してください。\n例: `@trrbot shuffle A B C D`',
+        text: `並び替える項目を2つ以上指定してください。\n例: \`${BOT_MENTION_NAME} shuffle A B C D\``,
         ...(threadTs && { thread_ts: threadTs }),
       });
       return;
