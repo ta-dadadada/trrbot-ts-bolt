@@ -1,5 +1,5 @@
 # ビルドステージ
-FROM node:24-slim AS builder
+FROM node:22-bullseye-slim AS builder
 
 # 作業ディレクトリを設定
 WORKDIR /app
@@ -17,8 +17,13 @@ COPY . .
 RUN npm run build
 
 # 本番ステージ
-FROM node:24-slim AS production
+FROM node:22-bullseye-slim AS production
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sqlite3 \
+    libsqlite3-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 # 作業ディレクトリを設定
 WORKDIR /app
 
@@ -33,15 +38,6 @@ COPY --from=builder /app/dist ./dist
 
 # データディレクトリを作成
 RUN mkdir -p /app/data
-
-# 非rootユーザーを作成
-RUN groupadd -r trrbot && useradd -r -g trrbot trrbot
-
-# データディレクトリの所有権を変更
-RUN chown -R trrbot:trrbot /app
-
-# 非rootユーザーに切り替え
-USER trrbot
 
 # アプリケーションの起動
 CMD ["npm", "start"]
