@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { HelpCommand } from './helpCommand';
-import { CommandContext } from './types';
+import { Command, CommandContext } from './types';
 import { WebClient } from '@slack/web-api';
+import type { Logger } from '@slack/bolt';
 import { BOT_MENTION_NAME } from '../config/constants';
 
 describe('HelpCommand', () => {
@@ -38,7 +39,7 @@ describe('HelpCommand', () => {
     const helpCommand = new HelpCommand();
     
     // コマンド一覧を設定
-    helpCommand.setCommands(mockCommands as any);
+    helpCommand.setCommands(mockCommands as Command[]);
 
     // sayのモック関数を作成
     const mockSay = vi.fn();
@@ -55,7 +56,7 @@ describe('HelpCommand', () => {
         info: vi.fn(),
         warn: vi.fn(),
         error: vi.fn(),
-      } as any,
+      } as Partial<Logger> as Logger,
       args: [],
       client: {} as WebClient,
     };

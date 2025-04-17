@@ -40,7 +40,7 @@ export class HelpCommand implements Command {
           const parts = example.split(' ');
           if (parts.length >= 3) {
             const subCommand = parts[2]; // BOT_MENTION_NAME command subcommand
-            const params = parts.slice(3).join(' ');
+            // パラメータ部分は現在未使用
             helpText += `  - \`${example}\` - `;
             
             // サブコマンドに基づいて説明を追加
