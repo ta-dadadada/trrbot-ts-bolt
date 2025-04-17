@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GroupService } from './groupService';
 import { GroupModel, GroupItemModel } from '../models/group';
 import db from '../config/database';
+import { getRandomItem } from '../utils/random';
 
 // GroupModelとGroupItemModelのモック
 vi.mock('../models/group', () => {
@@ -211,6 +212,74 @@ describe('GroupService', () => {
       expect(db.transaction).toHaveBeenCalled();
       expect(GroupItemModel.create).not.toHaveBeenCalled();
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('getRandomItemFromGroupExcluding', () => {
+    it('グループが存在しない場合はundefinedを返すこと', () => {
+      // GroupItemModel.getAllByGroupNameが空配列を返すようにモック
+      vi.mocked(GroupItemModel.getAllByGroupName).mockReturnValue([]);
+
+      // メソッドを実行
+      const result = GroupService.getRandomItemFromGroupExcluding('存在しないグループ', ['アイテム1']);
+
+      // 期待する結果を検証
+      expect(GroupItemModel.getAllByGroupName).toHaveBeenCalledWith('存在しないグループ');
+      expect(result).toBeUndefined();
+    });
+
+    it('グループが空の場合はundefinedを返すこと', () => {
+      // GroupItemModel.getAllByGroupNameが空配列を返すようにモック
+      vi.mocked(GroupItemModel.getAllByGroupName).mockReturnValue([]);
+
+      // メソッドを実行
+      const result = GroupService.getRandomItemFromGroupExcluding('空グループ', []);
+
+      // 期待する結果を検証
+      expect(GroupItemModel.getAllByGroupName).toHaveBeenCalledWith('空グループ');
+      expect(result).toBeUndefined();
+    });
+
+    it('除外アイテムを指定した場合、それらを除外してランダムに選択すること', () => {
+      // テスト用のアイテムリスト
+      const items = [
+        { id: 1, groupId: 1, itemText: 'アイテム1', createdAt: '2023-01-01' },
+        { id: 2, groupId: 1, itemText: 'アイテム2', createdAt: '2023-01-01' },
+        { id: 3, groupId: 1, itemText: 'アイテム3', createdAt: '2023-01-01' }
+      ];
+
+      // GroupItemModel.getAllByGroupNameがアイテムリストを返すようにモック
+      vi.mocked(GroupItemModel.getAllByGroupName).mockReturnValue(items);
+
+      // getRandomItemが特定のアイテムを返すようにモック
+      vi.mocked(getRandomItem).mockReturnValue(items[2]);
+
+      // メソッドを実行（アイテム1とアイテム2を除外）
+      const result = GroupService.getRandomItemFromGroupExcluding('テストグループ', ['アイテム1', 'アイテム2']);
+
+      // 期待する結果を検証
+      expect(GroupItemModel.getAllByGroupName).toHaveBeenCalledWith('テストグループ');
+      // フィルタリングされたアイテムリスト（アイテム3のみ）に対してgetRandomItemが呼ばれること
+      expect(getRandomItem).toHaveBeenCalledWith([items[2]]);
+      expect(result).toBe('アイテム3');
+    });
+
+    it('全てのアイテムが除外リストに含まれる場合はundefinedを返すこと', () => {
+      // テスト用のアイテムリスト
+      const items = [
+        { id: 1, groupId: 1, itemText: 'アイテム1', createdAt: '2023-01-01' },
+        { id: 2, groupId: 1, itemText: 'アイテム2', createdAt: '2023-01-01' }
+      ];
+
+      // GroupItemModel.getAllByGroupNameがアイテムリストを返すようにモック
+      vi.mocked(GroupItemModel.getAllByGroupName).mockReturnValue(items);
+
+      // メソッドを実行（全てのアイテムを除外）
+      const result = GroupService.getRandomItemFromGroupExcluding('テストグループ', ['アイテム1', 'アイテム2']);
+
+      // 期待する結果を検証
+      expect(GroupItemModel.getAllByGroupName).toHaveBeenCalledWith('テストグループ');
+      expect(result).toBeUndefined();
     });
   });
 });

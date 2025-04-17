@@ -74,6 +74,29 @@ export class GroupService {
   }
 
   /**
+   * 指定されたグループから特定のアイテムを除外してランダムにアイテムを1つ選択する
+   * @param groupName グループ名
+   * @param excludeItems 除外するアイテムの配列
+   * @returns ランダムに選択されたアイテムのテキスト、グループが存在しないか空の場合はundefined
+   */
+  static getRandomItemFromGroupExcluding(groupName: string, excludeItems: string[]): string | undefined {
+    const items = GroupItemModel.getAllByGroupName(groupName);
+    if (items.length === 0) {
+      return undefined;
+    }
+    
+    // 除外アイテムを除いたリストを作成
+    const filteredItems = items.filter(item => !excludeItems.includes(item.itemText));
+    
+    if (filteredItems.length === 0) {
+      return undefined;
+    }
+    
+    const randomItem = getRandomItem(filteredItems);
+    return randomItem?.itemText;
+  }
+
+  /**
    * 指定されたグループに新しいアイテムを追加する
    * @param groupName グループ名
    * @param itemText アイテムテキスト（ユーザーメンション `<@USER_ID>` 形式も対応）
