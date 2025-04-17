@@ -13,7 +13,8 @@ export class GroupCommand implements Command {
     `${BOT_MENTION_NAME} group create グループ名`,
     `${BOT_MENTION_NAME} group delete グループ名`,
     `${BOT_MENTION_NAME} group items グループ名`,
-    `${BOT_MENTION_NAME} group add グループ名 アイテム`,
+    `${BOT_MENTION_NAME} group add グループ名 アイテム1`,
+    `${BOT_MENTION_NAME} group add グループ名 アイテム1 アイテム2 アイテム3`,
     `${BOT_MENTION_NAME} group remove グループ名 アイテム`,
     `${BOT_MENTION_NAME} group clear グループ名`
   ];
@@ -74,7 +75,7 @@ export class GroupCommand implements Command {
       case 'add':
         if (args.length < 3) {
           await say({
-            text: 'グループ名とアイテムを指定してください。',
+            text: 'グループ名と1つ以上のアイテムを指定してください。複数のアイテムを一度に追加することもできます。',
             thread_ts: threadTs,
           });
           return;
