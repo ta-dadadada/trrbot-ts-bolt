@@ -52,6 +52,7 @@ describe('Slackアプリケーション', () => {
     delete process.env.SLACK_BOT_TOKEN;
     delete process.env.SLACK_SIGNING_SECRET;
     delete process.env.SLACK_APP_TOKEN;
+    delete process.env.SLACK_SOCKET_MODE;
   });
 
   it('Slackアプリが正しく初期化されること', () => {
@@ -62,7 +63,7 @@ describe('Slackアプリケーション', () => {
     const app = new App({
       token: process.env.SLACK_BOT_TOKEN,
       signingSecret: process.env.SLACK_SIGNING_SECRET,
-      socketMode: true,
+      socketMode: process.env.SLACK_SOCKET_MODE !== 'false',
       appToken: process.env.SLACK_APP_TOKEN,
     });
 
@@ -74,6 +75,34 @@ describe('Slackアプリケーション', () => {
       token: 'test-bot-token',
       signingSecret: 'test-signing-secret',
       socketMode: true,
+      appToken: 'test-app-token',
+    });
+
+    // appオブジェクトが正しく作成されたことを確認
+    expect(app).toBeDefined();
+  });
+
+  it('SLACK_SOCKET_MODE=falseに設定したときに`socketMode: false`に設定されること', () => {
+    // dotenvの設定を手動で呼び出す
+    dotenv.config();
+    process.env.SLACK_SOCKET_MODE = 'false';
+
+    // Slackアプリの初期化をシミュレート
+    const app = new App({
+      token: process.env.SLACK_BOT_TOKEN,
+      signingSecret: process.env.SLACK_SIGNING_SECRET,
+      socketMode: process.env.SLACK_SOCKET_MODE !== 'false',
+      appToken: process.env.SLACK_APP_TOKEN,
+    });
+
+    // dotenv.configが呼ばれたことを確認
+    expect(dotenv.config).toHaveBeenCalled();
+
+    // Appコンストラクタが正しいパラメータで呼ばれたか確認
+    expect(App).toHaveBeenCalledWith({
+      token: 'test-bot-token',
+      signingSecret: 'test-signing-secret',
+      socketMode: false,
       appToken: 'test-app-token',
     });
 

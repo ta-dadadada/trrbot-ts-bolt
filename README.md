@@ -123,7 +123,9 @@ docker-compose down -v
 
 ### ソケットモードの有効化（Socket Mode）
 
-このアプリはHTTPエンドポイントを公開せずに動作するため、「Socket Mode」をオンにします。これにより、WebSocketを使用してSlack APIと通信します。
+このアプリはデフォルトではHTTPエンドポイントを公開せずに動作するため、「Socket Mode」をオンにします。これにより、WebSocketを使用してSlack APIと通信します。
+
+環境変数`SLACK_SOCKET_MODE=false`を設定した場合Socket Modeを利用しないHTTPベースでイベントを受け取る構成で起動します。
 
 ### トークンの取得
 
