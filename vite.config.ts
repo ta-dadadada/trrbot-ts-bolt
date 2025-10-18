@@ -14,7 +14,7 @@ export default defineConfig({
       // 出力ファイル名
       name: 'trrbot',
       // 出力形式
-      formats: ['cjs'],
+      formats: ['es'],
       fileName: 'index',
     },
     // 依存関係を外部化

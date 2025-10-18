@@ -93,7 +93,7 @@ export class DiceCommand implements Command {
       
       // 通常のダイスコマンド処理
       // デフォルトは1〜6の範囲
-      let min = 1;
+      const min = 1;
       let max = 6;
       
       // 引数がある場合は、1〜指定された数字の範囲
