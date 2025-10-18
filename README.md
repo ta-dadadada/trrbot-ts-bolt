@@ -32,7 +32,38 @@ npm test
 
 ## Dockerを使用したデプロイ
 
-### 環境変数の設定
+### GitHub Container Registryからイメージを取得する
+
+このプロジェクトのDockerイメージはGitHub Container Registryで公開されています。
+
+```bash
+# 最新版を取得
+docker pull ghcr.io/ta-dadadada/trrbot-ts-bolt:latest
+
+# 特定のバージョンを取得
+docker pull ghcr.io/ta-dadadada/trrbot-ts-bolt:1.0.0
+```
+
+公開イメージを使用してコンテナを起動する場合：
+
+```bash
+# .envファイルを作成して環境変数を設定
+cp .env.example .env
+# .envファイルを編集してSlack APIトークンを設定
+
+# コンテナを起動
+docker run -d \
+  --name trrbot \
+  --env-file .env \
+  -v trrbot-data:/app/data \
+  ghcr.io/ta-dadadada/trrbot-ts-bolt:latest
+```
+
+### ローカルでイメージをビルドする
+
+公開イメージを使用せず、ローカルでDockerイメージをビルドすることもできます。
+
+#### 環境変数の設定
 
 1. `.env.example`ファイルをコピーして`.env`ファイルを作成します：
 
@@ -49,7 +80,7 @@ SLACK_APP_TOKEN=xapp-your-app-token
 PORT=3000
 ```
 
-### Dockerイメージのビルドと起動
+#### Dockerイメージのビルドと起動
 
 ```bash
 # イメージをビルドしてコンテナを起動
