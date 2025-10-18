@@ -13,6 +13,10 @@ updates:
     labels:
       - "dependencies"
       - "npm"
+    ignore:
+      # Node.js v22 LTSに固定するため、@types/nodeのメジャーバージョンアップを抑止
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions依存関係の更新
   - package-ecosystem: "github-actions"
