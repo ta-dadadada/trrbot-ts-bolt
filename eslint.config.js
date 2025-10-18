@@ -1,29 +1,22 @@
-import tseslint from '@typescript-eslint/eslint-plugin';
-import tsParser from '@typescript-eslint/parser';
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
 import prettierConfig from 'eslint-config-prettier';
 
-export default [
+export default tseslint.config(
   {
     ignores: ['dist/**', 'node_modules/**'],
   },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
   {
     files: ['**/*.ts'],
     languageOptions: {
-      parser: tsParser,
       parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        project: './tsconfig.json',
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
       },
-      globals: {},
-    },
-    plugins: {
-      '@typescript-eslint': tseslint,
     },
     rules: {
-      // TypeScript ESLint 推奨ルール
-      ...tseslint.configs.recommended.rules,
-      
       // カスタムルール
       'no-console': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
@@ -34,4 +27,4 @@ export default [
   },
   // Prettierとの競合を避けるための設定
   prettierConfig,
-];
+);
