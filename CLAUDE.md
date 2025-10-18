@@ -64,7 +64,7 @@ The bot defaults to Socket Mode (WebSocket connection) but can switch to HTTP mo
 ### Build System
 - **Vite** is used for building (not Webpack or tsc directly)
 - Build output goes to `dist/` directory
-- Output format is CommonJS (`formats: ['cjs']`)
+- Output format is ES modules (`formats: ['es']`)
 - External dependencies are not bundled (see `vite.config.ts` for full list)
 
 ### Test Framework
