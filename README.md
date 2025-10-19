@@ -61,6 +61,7 @@ npm test
 - `build`: ビルドシステム
 - `ci`: CI設定
 - `chore`: その他の変更
+- `revert`: 取り消し
 
 **コミットメッセージ例:**
 ```bash
@@ -75,8 +76,22 @@ git commit --no-verify -m "message"
 git push --no-verify
 ```
 
-### CI/CD環境
-CI環境（GitHub Actions等）では、`HUSKY=0`環境変数が自動的に設定され、Hooksはスキップされます。
+### CI/CD環境でのGit Hooksスキップ
+
+CI環境（GitHub Actions等）でGit Hooksをスキップするには、`HUSKY=0`環境変数を設定します。
+
+本プロジェクトのCIワークフローでは既に設定済みです：
+```yaml
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: 0  # Git Hooksをスキップ
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: npm ci
+```
 
 ## Dockerを使用したデプロイ
 

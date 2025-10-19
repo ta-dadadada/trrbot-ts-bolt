@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   extends: ['@commitlint/config-conventional'],
   rules: {
     // 日本語のコミットメッセージも許可
@@ -6,7 +6,7 @@ export default {
     // bodyとfooterで日本語を使用可能にする
     'body-leading-blank': [1, 'always'],
     'footer-leading-blank': [1, 'always'],
-    // typeの制限を緩和（カスタムtypeを許可）
+    // 許可されるコミットタイプを定義
     'type-enum': [
       2,
       'always',

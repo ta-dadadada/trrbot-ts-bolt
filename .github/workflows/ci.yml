@@ -9,6 +9,8 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
     steps:
       - uses: actions/checkout@v5
       - name: Setup Node.js
@@ -31,6 +33,8 @@ jobs:
   lint:
     needs: setup
     runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
     steps:
       - uses: actions/checkout@v5
       - name: Setup Node.js
@@ -49,6 +53,8 @@ jobs:
   test:
     needs: setup
     runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
     steps:
       - uses: actions/checkout@v5
       - name: Setup Node.js
@@ -72,6 +78,8 @@ jobs:
   build:
     needs: [lint, test]
     runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
     steps:
       - uses: actions/checkout@v5
       - name: Setup Node.js

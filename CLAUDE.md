@@ -90,8 +90,8 @@ This project uses Git Hooks to ensure code quality:
 **Setup**: Hooks are automatically installed when running `npm install` via the `prepare` script.
 
 **Configuration files**:
-- `.husky/`: Hook scripts directory
-- `commitlint.config.js`: Commit message rules
+- `.husky/`: Hook scripts directory (no shebang needed in Husky v9)
+- `commitlint.config.cjs`: Commit message rules (CommonJS format for ESM projects)
 - `lint-staged` section in `package.json`: Staged files processing rules
 
 **Commit Message Format** (Conventional Commits):
