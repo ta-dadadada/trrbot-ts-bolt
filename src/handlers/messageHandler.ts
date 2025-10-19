@@ -15,8 +15,8 @@ export const registerMessageHandlers = (app: App): void => {
         return;
       }
 
-      // DMチャンネルかどうかを判定（DMチャンネルIDは通常「D」で始まる）
-      const isDM = message.channel && message.channel.toString().startsWith('D');
+      // DMチャンネルかどうかを判定（channel_typeプロパティを使用）
+      const isDM = message.channel_type === 'im';
 
       // DMの場合はコマンド処理を行う
       if (isDM) {
