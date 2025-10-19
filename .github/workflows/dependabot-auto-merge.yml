@@ -17,7 +17,7 @@ jobs:
     if: |
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'pull_request' &&
-      github.actor == 'dependabot[bot]'
+      github.event.workflow_run.actor.login == 'dependabot[bot]'
     steps:
       - name: Get PR number
         id: pr
@@ -45,10 +45,12 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Auto-approve and merge
-        # パッチとマイナーバージョン更新のみ自動マージ
+        # パッチとマイナーバージョン更新、または間接的依存関係（indirect）のみ自動マージ
+        # 間接的依存関係の場合、update-typeがnullになることがあるため、dependency-typeでチェック
         if: |
           steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-          steps.metadata.outputs.update-type == 'version-update:semver-minor'
+          steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
+          steps.metadata.outputs.dependency-type == 'indirect'
         run: |
           gh pr review --approve "$PR_URL"
           gh pr merge --auto --squash "$PR_URL"
