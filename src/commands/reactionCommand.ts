@@ -2,6 +2,8 @@ import { Command, CommandContext, getThreadTs } from './types';
 import { ReactionService } from '../services/reactionService';
 import { FilesUploadV2Arguments } from '@slack/web-api';
 import { BOT_MENTION_NAME } from '../config/constants';
+import { validateTriggerText, ValidationError } from '../utils/validation';
+import { stringify } from 'csv-stringify/sync';
 
 /**
  * リアクションコマンドの実装
@@ -73,19 +75,29 @@ export class ReactionCommand implements Command {
     const { event, say } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
-    
+
     try {
-      ReactionService.addReactionMapping(triggerText, reaction);
-      
+      // トリガーテキストのバリデーション
+      const validatedTriggerText = validateTriggerText(triggerText);
+
+      ReactionService.addReactionMapping(validatedTriggerText, reaction);
+
       await say({
-        text: `リアクションマッピングを追加しました: "${triggerText}" → ${reaction}`,
+        text: `リアクションマッピングを追加しました: "${validatedTriggerText}" → ${reaction}`,
         thread_ts: threadTs,
       });
     } catch (error) {
-      await say({
-        text: `リアクションマッピングの追加に失敗しました: ${(error as Error).message}`,
-        thread_ts: threadTs,
-      });
+      if (error instanceof ValidationError) {
+        await say({
+          text: `バリデーションエラー: ${error.message}`,
+          thread_ts: threadTs,
+        });
+      } else {
+        await say({
+          text: `リアクションマッピングの追加に失敗しました: ${(error as Error).message}`,
+          thread_ts: threadTs,
+        });
+      }
     }
   }
 
@@ -132,18 +144,18 @@ export class ReactionCommand implements Command {
         return;
       }
       
-      // CSVヘッダー
-      const csvHeader = 'ID,トリガーテキスト,リアクション,使用回数,作成日時,更新日時\n';
-      
-      // CSVデータ行の生成
-      const csvRows = mappings.map(mapping => {
-        // CSVフォーマットに合わせてエスケープ処理
-        const escapedTrigger = `"${mapping.triggerText.replace(/"/g, '""')}"`;
-        return `${mapping.id},${escapedTrigger},${mapping.reaction},${mapping.usageCount},${mapping.createdAt},${mapping.updatedAt}`;
+      // CSV形式でデータをエクスポート（RFC 4180準拠）
+      const csvContent = stringify(mappings, {
+        header: true,
+        columns: [
+          { key: 'id', header: 'ID' },
+          { key: 'triggerText', header: 'トリガーテキスト' },
+          { key: 'reaction', header: 'リアクション' },
+          { key: 'usageCount', header: '使用回数' },
+          { key: 'createdAt', header: '作成日時' },
+          { key: 'updatedAt', header: '更新日時' }
+        ]
       });
-      
-      // CSVデータの結合
-      const csvContent = csvHeader + csvRows.join('\n');
       
       // 現在の日時を取得してファイル名に使用
       const now = new Date();

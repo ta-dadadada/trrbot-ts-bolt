@@ -1,6 +1,7 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { GroupService } from '../services/groupService';
 import { BOT_MENTION_NAME } from '../config/constants';
+import { validateGroupName, validateItemText, ValidationError } from '../utils/validation';
 
 /**
  * グループコマンドの実装
@@ -146,19 +147,29 @@ export class GroupCommand implements Command {
     const { event, say } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
-    
+
     try {
-      GroupService.createGroup(groupName);
-      
+      // グループ名のバリデーション
+      const validatedGroupName = validateGroupName(groupName);
+
+      GroupService.createGroup(validatedGroupName);
+
       await say({
-        text: `グループ "${groupName}" を作成しました。`,
+        text: `グループ "${validatedGroupName}" を作成しました。`,
         thread_ts: threadTs,
       });
     } catch (error) {
-      await say({
-        text: `グループの作成に失敗しました: ${(error as Error).message}`,
-        thread_ts: threadTs,
-      });
+      if (error instanceof ValidationError) {
+        await say({
+          text: `バリデーションエラー: ${error.message}`,
+          thread_ts: threadTs,
+        });
+      } else {
+        await say({
+          text: `グループの作成に失敗しました: ${(error as Error).message}`,
+          thread_ts: threadTs,
+        });
+      }
     }
   }
 
@@ -218,43 +229,63 @@ export class GroupCommand implements Command {
     const { event, say } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
-    
-    // 空白で区切られた複数のアイテムを処理
-    const items = itemText.split(' ').filter(item => item.trim() !== '');
-    
-    if (items.length === 1) {
-      // 単一アイテムの場合
-      const result = GroupService.addItemToGroup(groupName, items[0]);
-      
-      if (result !== undefined) {
-        await say({
-          text: `グループ "${groupName}" にアイテム "${items[0]}" を追加しました。`,
-          thread_ts: threadTs,
-        });
-      } else {
-        await say({
-          text: `グループ "${groupName}" は存在しません。`,
-          thread_ts: threadTs,
-        });
+
+    try {
+      // 空白で区切られた複数のアイテムを処理
+      const items = itemText.split(' ').filter(item => item.trim() !== '');
+
+      // 各アイテムをバリデーション
+      const validatedItems: string[] = [];
+      for (const item of items) {
+        try {
+          const validated = validateItemText(item);
+          validatedItems.push(validated);
+        } catch (error) {
+          if (error instanceof ValidationError) {
+            await say({
+              text: `アイテム "${item}" のバリデーションエラー: ${error.message}`,
+              thread_ts: threadTs,
+            });
+            return;
+          }
+          throw error;
+        }
       }
-    } else if (items.length > 1) {
-      // 複数アイテムの場合
-      const results = GroupService.addItemsToGroup(groupName, items);
-      
-      if (results.length > 0) {
-        await say({
-          text: `グループ "${groupName}" に ${items.length} 個のアイテムを追加しました：\n${items.join('\n')}`,
-          thread_ts: threadTs,
-        });
+
+      if (validatedItems.length === 1) {
+        // 単一アイテムの場合
+        const result = GroupService.addItemToGroup(groupName, validatedItems[0]);
+
+        if (result !== undefined) {
+          await say({
+            text: `グループ "${groupName}" にアイテム "${validatedItems[0]}" を追加しました。`,
+            thread_ts: threadTs,
+          });
+        } else {
+          await say({
+            text: `グループ "${groupName}" は存在しません。`,
+            thread_ts: threadTs,
+          });
+        }
       } else {
-        await say({
-          text: `グループ "${groupName}" は存在しません。`,
-          thread_ts: threadTs,
-        });
+        // 複数アイテムの場合
+        const results = GroupService.addItemsToGroup(groupName, validatedItems);
+
+        if (results.length > 0) {
+          await say({
+            text: `グループ "${groupName}" に ${validatedItems.length} 個のアイテムを追加しました：\n${validatedItems.join('\n')}`,
+            thread_ts: threadTs,
+          });
+        } else {
+          await say({
+            text: `グループ "${groupName}" は存在しません。`,
+            thread_ts: threadTs,
+          });
+        }
       }
-    } else {
+    } catch (error) {
       await say({
-        text: `追加するアイテムを指定してください。`,
+        text: `アイテムの追加に失敗しました: ${(error as Error).message}`,
         thread_ts: threadTs,
       });
     }
