@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { HelpCommand } from './helpCommand';
 import { Command, CommandContext } from './types';
-import { CommandRegistration } from './index';
+import type { CommandRegistration } from './index';
 import { WebClient } from '@slack/web-api';
 import type { Logger } from '@slack/bolt';
 import { BOT_MENTION_NAME } from '../config/constants';

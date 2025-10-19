@@ -53,8 +53,8 @@ const registrations: CommandRegistration[] = [
   },
   {
     command: groupChoiceCommand,
-    primaryName: 'group-choice',
-    aliases: ['gc', 'gchoice'],
+    primaryName: 'groupChoice',
+    aliases: ['gc', 'group-choice', 'gchoice'],
     displayName: 'gc',
   },
   {
@@ -91,8 +91,8 @@ const registrations: CommandRegistration[] = [
   },
   {
     command: groupShuffleCommand,
-    primaryName: 'group-shuffle',
-    aliases: ['gs', 'gshuffle'],
+    primaryName: 'groupShuffle',
+    aliases: ['gs', 'group-shuffle', 'gshuffle'],
     displayName: 'gs',
   },
 ];

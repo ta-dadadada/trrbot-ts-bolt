@@ -1,5 +1,5 @@
 import { Command, CommandContext, getThreadTs } from './types';
-import { CommandRegistration } from './index';
+import type { CommandRegistration } from './index';
 import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
@@ -46,7 +46,9 @@ export class HelpCommand implements Command {
         if (reg.dmOnly) {
           nameDisplay = `*${displayName} (DM専用)*`;
         } else if (reg.aliases.length > 0 && reg.displayName) {
-          nameDisplay = `*${displayName} (${reg.primaryName})*`;
+          // primaryNameと全エイリアスを表示
+          const allNames = [reg.primaryName, ...reg.aliases].filter((name) => name !== displayName);
+          nameDisplay = `*${displayName} (${allNames.join(', ')})*`;
         } else {
           nameDisplay = `*${displayName}*`;
         }
