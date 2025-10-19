@@ -1,11 +1,17 @@
-# ビルドステージ
-FROM node:22-alpine AS builder
+# ==============================================================================
+# 共通ベースステージ（ビルドツールを含む）
+# ==============================================================================
+FROM node:22-alpine AS base-builder
 
-# 作業ディレクトリを設定
 WORKDIR /app
 
 # better-sqlite3のビルドに必要なパッケージをインストール
 RUN apk add --no-cache python3 make g++ sqlite-dev
+
+# ==============================================================================
+# ビルドステージ
+# ==============================================================================
+FROM base-builder AS builder
 
 # パッケージ管理ファイルをコピー（依存関係のキャッシュを活用）
 COPY package*.json ./
@@ -20,20 +26,19 @@ COPY . .
 # TypeScriptのビルド
 RUN npm run build
 
+# ==============================================================================
 # 本番依存関係ステージ
-FROM node:22-alpine AS prod-deps
-
-WORKDIR /app
-
-# better-sqlite3のビルドに必要なパッケージをインストール
-RUN apk add --no-cache python3 make g++ sqlite-dev
+# ==============================================================================
+FROM base-builder AS prod-deps
 
 COPY package*.json ./
 
 # 本番依存関係のみインストール（ネイティブモジュールを含む）
 RUN HUSKY=0 npm ci --omit=dev
 
+# ==============================================================================
 # 本番ステージ
+# ==============================================================================
 FROM node:22-alpine AS production
 
 # 実行時に必要な最小限のパッケージのみインストール
@@ -54,7 +59,7 @@ COPY --chown=node:node package*.json ./
 # ビルドステージからビルド済みのファイルをコピー
 COPY --from=builder --chown=node:node /app/dist ./dist
 
-# 本番依存関係ステージからnode_modulesをコピー（better-sqlite3を含む全依存関係を確実に含める）
+# 本番依存関係ステージからnode_modulesをコピー
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 
 # dumb-initを使用してプロセスを適切に管理
