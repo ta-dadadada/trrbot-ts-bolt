@@ -1,9 +1,9 @@
 module.exports = {
   extends: ['@commitlint/config-conventional'],
   rules: {
-    // 日本語のコミットメッセージも許可
+    // 日本語のコミットメッセージも許可（subject-caseを無効化）
     'subject-case': [0],
-    // bodyとfooterで日本語を使用可能にする
+    // ヘッダーと本文/フッターの間に空行を必須にする
     'body-leading-blank': [1, 'always'],
     'footer-leading-blank': [1, 'always'],
     // 許可されるコミットタイプを定義
