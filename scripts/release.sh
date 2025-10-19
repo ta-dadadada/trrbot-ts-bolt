@@ -60,17 +60,11 @@ fi
 
 # Commit the version change
 print_info "Committing version bump..."
-git add package.json
+git add package.json package-lock.json
 git commit -m "chore: bump version to $NEW_VERSION"
 
 # Create signed and annotated tag
-print_info "Creating signed tag v$NEW_VERSION..."
-git tag -s "v$NEW_VERSION" -m "Release v$NEW_VERSION"
-
-# Push commits and tags
-print_info "Pushing to remote..."
-git push origin $(git branch --show-current)
-git push origin "v$NEW_VERSION"
-
-print_info "✅ Release v$NEW_VERSION completed successfully!"
-print_info "Tag created: v$NEW_VERSION (signed)"
+echo "Please execute the following command to create a GPG-signed tag:"
+echo "git tag -s \"v$NEW_VERSION\" -m \"Release v$NEW_VERSION\""
+echo "git push origin $(git branch --show-current)"
+echo "git push origin \"v$NEW_VERSION\""
