@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.ts\"",
-    "prepare": "node -e \"if (process.env.NODE_ENV === 'production' || process.env.SKIP_HUSKY === '1') process.exit(0); try { require('husky') } catch (e) { if (e.code !== 'MODULE_NOT_FOUND') throw e }\""
+    "prepare": "husky || true"
   },
   "keywords": [],
   "author": "",

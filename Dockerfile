@@ -8,8 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # 依存関係のインストール（開発依存関係を含む）
-# SKIP_HUSKY=1でprepareスクリプトのHusky実行をスキップ（Docker内ではGit hooksは不要）
-RUN SKIP_HUSKY=1 npm ci
+# HUSKY=0でprepareスクリプトのHusky実行をスキップ（Docker内ではGit hooksは不要）
+RUN HUSKY=0 npm ci
 
 # アプリケーションのソースコードをコピー
 COPY . .
@@ -32,8 +32,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # 本番依存関係のみインストール
-# NODE_ENV=productionでprepareスクリプトのHusky実行をスキップ
-RUN NODE_ENV=production npm ci --omit=dev
+# HUSKY=0でprepareスクリプトのHusky実行をスキップ（Docker内ではGit hooksは不要）
+RUN HUSKY=0 npm ci --omit=dev
 
 # ビルドステージからビルド済みのファイルをコピー
 COPY --from=builder /app/dist ./dist
