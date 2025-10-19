@@ -16,7 +16,7 @@ export const registerMessageHandlers = (app: App): void => {
       }
 
       // DMチャンネルかどうかを判定（channel_typeプロパティを使用）
-      const isDM = 'channel_type' in message && message.channel_type === 'im';
+      const isDM = message.channel_type === 'im';
 
       // DMの場合はコマンド処理を行う
       if (isDM) {
