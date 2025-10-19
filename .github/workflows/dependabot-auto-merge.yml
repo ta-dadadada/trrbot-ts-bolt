@@ -1,8 +1,10 @@
 name: Dependabot Auto-merge
 
 on:
-  pull_request:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -11,22 +13,36 @@ permissions:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
-    # Dependabotが作成したPRのみ対象
-    if: github.actor == 'dependabot[bot]'
+    # CIワークフローが成功し、かつDependabotが作成したPRの場合のみ対象
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.actor == 'dependabot[bot]'
     steps:
+      - name: Get PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pulls = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`,
+              state: 'open'
+            });
+            if (pulls.data.length === 0) {
+              core.setFailed('No open PR found for this branch');
+              return;
+            }
+            const pr = pulls.data[0];
+            core.setOutput('number', pr.number);
+            core.setOutput('url', pr.html_url);
+
       - name: Check PR metadata
         id: metadata
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: Wait for CI checks
-        uses: lewagon/wait-on-check-action@v1.4.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          check-regexp: 'build'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
 
       - name: Auto-approve and merge
         # パッチとマイナーバージョン更新のみ自動マージ
@@ -37,7 +53,7 @@ jobs:
           gh pr review --approve "$PR_URL"
           gh pr merge --auto --squash "$PR_URL"
         env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_URL: ${{ steps.pr.outputs.url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Comment on major version update
@@ -46,5 +62,5 @@ jobs:
         run: |
           gh pr comment "$PR_URL" --body "⚠️ This is a major version update and requires manual review."
         env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_URL: ${{ steps.pr.outputs.url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
