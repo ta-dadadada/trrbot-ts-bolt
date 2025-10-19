@@ -6,9 +6,16 @@ import { BOT_MENTION_NAME } from '../config/constants';
  * サイコロを振るコマンドの実装
  */
 export class DiceCommand implements Command {
-  name = 'dice';
   description = 'サイコロを振って、ランダムな数字を返します';
-  examples = [`${BOT_MENTION_NAME} dice`, `${BOT_MENTION_NAME} dice 10`, `${BOT_MENTION_NAME} 2d6`, `${BOT_MENTION_NAME} 3d10`];
+
+  getExamples(commandName: string): string[] {
+    return [
+      `${BOT_MENTION_NAME} ${commandName}`,
+      `${BOT_MENTION_NAME} ${commandName} 10`,
+      `${BOT_MENTION_NAME} 2d6`,
+      `${BOT_MENTION_NAME} 3d10`,
+    ];
+  }
 
   /**
    * ダイスコード（例: 2d6）を解析する
@@ -55,34 +62,34 @@ export class DiceCommand implements Command {
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args, logger } = context;
     const threadTs = getThreadTs(event);
-    
+
     try {
       // コマンド名自体がダイスコード形式かチェック
       // event.textが存在し、かつコマンド名（最初の単語）がダイスコード形式かチェック
       const commandName = event.text?.trim().split(/\s+/)[0] || '';
       const commandNameDiceCode = this.parseDiceCode(commandName);
-      
+
       if (commandNameDiceCode) {
         // コマンド名がダイスコード形式の場合（例: BOT_MENTION_NAME 2d6）
         const [diceCount, diceFaces] = commandNameDiceCode;
         const { results, total } = this.rollMultipleDice(diceCount, diceFaces);
-        
+
         await say({
           text: `🎲 ${diceCount}d${diceFaces} の結果: ${results.join(', ')} = *${total}*`,
           ...(threadTs && { thread_ts: threadTs }),
         });
         return;
       }
-      
+
       // 引数がダイスコード形式かチェック
       if (args.length > 0) {
         const argDiceCode = this.parseDiceCode(args[0]);
-        
+
         if (argDiceCode) {
           // 引数がダイスコード形式の場合（例: BOT_MENTION_NAME dice 2d6）
           const [diceCount, diceFaces] = argDiceCode;
           const { results, total } = this.rollMultipleDice(diceCount, diceFaces);
-          
+
           await say({
             text: `🎲 ${diceCount}d${diceFaces} の結果: ${results.join(', ')} = *${total}*`,
             ...(threadTs && { thread_ts: threadTs }),
@@ -90,16 +97,16 @@ export class DiceCommand implements Command {
           return;
         }
       }
-      
+
       // 通常のダイスコマンド処理
       // デフォルトは1〜6の範囲
       const min = 1;
       let max = 6;
-      
+
       // 引数がある場合は、1〜指定された数字の範囲
       if (args.length > 0) {
         const maxArg = parseInt(args[0], 10);
-        
+
         if (isNaN(maxArg) || maxArg < 1) {
           await say({
             text: '有効な正の整数を指定してください。',
@@ -107,12 +114,12 @@ export class DiceCommand implements Command {
           });
           return;
         }
-        
+
         max = maxArg;
       }
-      
+
       const result = getRandomInt(min, max);
-      
+
       await say({
         text: `🎲 結果: *${result}*`,
         ...(threadTs && { thread_ts: threadTs }),

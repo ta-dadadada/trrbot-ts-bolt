@@ -7,24 +7,38 @@ import { validateGroupName, validateItemText, ValidationError } from '../utils/v
  * グループコマンドの実装
  */
 export class GroupCommand implements Command {
-  name = 'group';
   description = 'グループを管理します';
-  examples = [
-    `${BOT_MENTION_NAME} group list`,
-    `${BOT_MENTION_NAME} group create グループ名`,
-    `${BOT_MENTION_NAME} group delete グループ名`,
-    `${BOT_MENTION_NAME} group items グループ名`,
-    `${BOT_MENTION_NAME} group add グループ名 アイテム1`,
-    `${BOT_MENTION_NAME} group add グループ名 アイテム1 アイテム2 アイテム3`,
-    `${BOT_MENTION_NAME} group remove グループ名 アイテム`,
-    `${BOT_MENTION_NAME} group clear グループ名`
-  ];
+
+  getExamples(commandName: string): string[] {
+    return [
+      `${BOT_MENTION_NAME} ${commandName} list`,
+      `${BOT_MENTION_NAME} ${commandName} create グループ名`,
+      `${BOT_MENTION_NAME} ${commandName} delete グループ名`,
+      `${BOT_MENTION_NAME} ${commandName} items グループ名`,
+      `${BOT_MENTION_NAME} ${commandName} add グループ名 アイテム1`,
+      `${BOT_MENTION_NAME} ${commandName} add グループ名 アイテム1 アイテム2 アイテム3`,
+      `${BOT_MENTION_NAME} ${commandName} remove グループ名 アイテム`,
+      `${BOT_MENTION_NAME} ${commandName} clear グループ名`,
+    ];
+  }
+
+  getHelpText(commandName: string): string {
+    let text = `*${commandName}* - ${this.description}\n`;
+    text += `  - \`${BOT_MENTION_NAME} ${commandName} list\` - すべてのグループを表示\n`;
+    text += `  - \`${BOT_MENTION_NAME} ${commandName} create グループ名\` - 新しいグループを作成\n`;
+    text += `  - \`${BOT_MENTION_NAME} ${commandName} delete グループ名\` - グループを削除\n`;
+    text += `  - \`${BOT_MENTION_NAME} ${commandName} items グループ名\` - グループのアイテムを表示\n`;
+    text += `  - \`${BOT_MENTION_NAME} ${commandName} add グループ名 アイテム...\` - アイテムを追加\n`;
+    text += `  - \`${BOT_MENTION_NAME} ${commandName} remove グループ名 アイテム\` - アイテムを削除\n`;
+    text += `  - \`${BOT_MENTION_NAME} ${commandName} clear グループ名\` - グループのすべてのアイテムを削除\n\n`;
+    return text;
+  }
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
-    
+
     if (args.length === 0) {
       await say({
         text: 'サブコマンドを指定してください（list, create, delete, items, add, remove, clear）。',
@@ -32,14 +46,14 @@ export class GroupCommand implements Command {
       });
       return;
     }
-    
+
     const subCommand = args[0].toLowerCase();
-    
+
     switch (subCommand) {
       case 'list':
         await this.handleList(context);
         break;
-        
+
       case 'create':
         if (args.length < 2) {
           await say({
@@ -50,7 +64,7 @@ export class GroupCommand implements Command {
         }
         await this.handleCreate(context, args[1]);
         break;
-        
+
       case 'delete':
         if (args.length < 2) {
           await say({
@@ -61,7 +75,7 @@ export class GroupCommand implements Command {
         }
         await this.handleDelete(context, args[1]);
         break;
-        
+
       case 'items':
         if (args.length < 2) {
           await say({
@@ -72,7 +86,7 @@ export class GroupCommand implements Command {
         }
         await this.handleItems(context, args[1]);
         break;
-        
+
       case 'add':
         if (args.length < 3) {
           await say({
@@ -83,7 +97,7 @@ export class GroupCommand implements Command {
         }
         await this.handleAdd(context, args[1], args.slice(2).join(' '));
         break;
-        
+
       case 'remove':
         if (args.length < 3) {
           await say({
@@ -94,7 +108,7 @@ export class GroupCommand implements Command {
         }
         await this.handleRemove(context, args[1], args.slice(2).join(' '));
         break;
-        
+
       case 'clear':
         if (args.length < 2) {
           await say({
@@ -105,7 +119,7 @@ export class GroupCommand implements Command {
         }
         await this.handleClear(context, args[1]);
         break;
-        
+
       default:
         await say({
           text: `未知のサブコマンド: ${subCommand}\n有効なサブコマンド: list, create, delete, items, add, remove, clear`,
@@ -121,9 +135,9 @@ export class GroupCommand implements Command {
     const { event, say } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
-    
+
     const groups = GroupService.getAllGroups();
-    
+
     if (groups.length === 0) {
       await say({
         text: 'グループはありません。',
@@ -131,9 +145,9 @@ export class GroupCommand implements Command {
       });
       return;
     }
-    
-    const groupTexts = groups.map(group => group.name);
-    
+
+    const groupTexts = groups.map((group) => group.name);
+
     await say({
       text: `*グループ一覧:*\n${groupTexts.join('\n')}`,
       thread_ts: threadTs,
@@ -180,9 +194,9 @@ export class GroupCommand implements Command {
     const { event, say } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
-    
+
     const success = GroupService.deleteGroup(groupName);
-    
+
     if (success) {
       await say({
         text: `グループ "${groupName}" を削除しました。`,
@@ -203,9 +217,9 @@ export class GroupCommand implements Command {
     const { event, say } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
-    
+
     const items = GroupService.getItemsByGroupName(groupName);
-    
+
     if (items.length === 0) {
       await say({
         text: `グループ "${groupName}" にはアイテムがありません。`,
@@ -213,9 +227,9 @@ export class GroupCommand implements Command {
       });
       return;
     }
-    
-    const itemTexts = items.map(item => item.itemText);
-    
+
+    const itemTexts = items.map((item) => item.itemText);
+
     await say({
       text: `*グループ "${groupName}" のアイテム:*\n${itemTexts.join('\n')}`,
       thread_ts: threadTs,
@@ -225,14 +239,18 @@ export class GroupCommand implements Command {
   /**
    * グループにアイテムを追加する
    */
-  private async handleAdd(context: CommandContext, groupName: string, itemText: string): Promise<void> {
+  private async handleAdd(
+    context: CommandContext,
+    groupName: string,
+    itemText: string,
+  ): Promise<void> {
     const { event, say } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
 
     try {
       // 空白で区切られた複数のアイテムを処理
-      const items = itemText.split(' ').filter(item => item.trim() !== '');
+      const items = itemText.split(' ').filter((item) => item.trim() !== '');
 
       // 各アイテムをバリデーション
       const validatedItems: string[] = [];
@@ -294,13 +312,17 @@ export class GroupCommand implements Command {
   /**
    * グループからアイテムを削除する
    */
-  private async handleRemove(context: CommandContext, groupName: string, itemText: string): Promise<void> {
+  private async handleRemove(
+    context: CommandContext,
+    groupName: string,
+    itemText: string,
+  ): Promise<void> {
     const { event, say } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
-    
+
     const success = GroupService.removeItemFromGroup(groupName, itemText);
-    
+
     if (success) {
       await say({
         text: `グループ "${groupName}" からアイテム "${itemText}" を削除しました。`,
@@ -321,9 +343,9 @@ export class GroupCommand implements Command {
     const { event, say } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
-    
+
     const success = GroupService.clearGroupItems(groupName);
-    
+
     if (success) {
       await say({
         text: `グループ "${groupName}" のすべてのアイテムを削除しました。`,
