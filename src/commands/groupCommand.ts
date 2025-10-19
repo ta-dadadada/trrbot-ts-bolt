@@ -252,14 +252,6 @@ export class GroupCommand implements Command {
         }
       }
 
-      if (validatedItems.length === 0) {
-        await say({
-          text: `追加するアイテムを指定してください。`,
-          thread_ts: threadTs,
-        });
-        return;
-      }
-
       if (validatedItems.length === 1) {
         // 単一アイテムの場合
         const result = GroupService.addItemToGroup(groupName, validatedItems[0]);

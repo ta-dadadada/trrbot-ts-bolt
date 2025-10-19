@@ -1,4 +1,12 @@
 /**
+ * 制御文字のチェックパターン（改行、タブは許可）
+ * 制御文字は \u0000-\u001F と \u007F-\u009F の範囲
+ * 改行(\n=\u000A, \r=\u000D)とタブ(\t=\u0009)は除外
+ */
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHAR_PATTERN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/;
+
+/**
  * バリデーションエラークラス
  */
 export class ValidationError extends Error {
@@ -25,11 +33,7 @@ export function validateTriggerText(text: string): string {
     throw new ValidationError('トリガーテキストは100文字以内で入力してください');
   }
 
-  // 制御文字のチェック（改行、タブは許可）
-  // 制御文字は \x00-\x1F と \x7F-\x9F の範囲
-  // 改行(\n=\x0A, \r=\x0D)とタブ(\t=\x09)は除外
-  const controlCharPattern = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/;
-  if (controlCharPattern.test(trimmed)) {
+  if (CONTROL_CHAR_PATTERN.test(trimmed)) {
     throw new ValidationError('トリガーテキストに不正な制御文字が含まれています');
   }
 
@@ -53,9 +57,7 @@ export function validateGroupName(name: string): string {
     throw new ValidationError('グループ名は50文字以内で入力してください');
   }
 
-  // 制御文字のチェック（改行、タブは許可）
-  const controlCharPattern = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/;
-  if (controlCharPattern.test(trimmed)) {
+  if (CONTROL_CHAR_PATTERN.test(trimmed)) {
     throw new ValidationError('グループ名に不正な制御文字が含まれています');
   }
 
@@ -79,9 +81,7 @@ export function validateItemText(text: string): string {
     throw new ValidationError('アイテムテキストは200文字以内で入力してください');
   }
 
-  // 制御文字のチェック（改行、タブは許可）
-  const controlCharPattern = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/;
-  if (controlCharPattern.test(trimmed)) {
+  if (CONTROL_CHAR_PATTERN.test(trimmed)) {
     throw new ValidationError('アイテムテキストに不正な制御文字が含まれています');
   }
 
