@@ -30,6 +30,54 @@ npm start
 npm test
 ```
 
+## 開発者向け情報
+
+### Git Hooks
+
+このプロジェクトでは、コード品質を保つためにGit Hooksを使用しています。`npm install`を実行すると、Huskyが自動的に以下のフックを設定します：
+
+#### pre-commit
+コミット前に以下の処理が自動実行されます：
+- **ESLint**: コードの静的解析と自動修正
+- **Prettier**: コードフォーマットの自動適用
+
+これにより、ステージされたTypeScriptファイルのみがチェック・修正されます。
+
+#### pre-push
+プッシュ前に以下の処理が自動実行されます：
+- **テスト実行**: 全てのテストが実行され、失敗するとpushがブロックされます
+
+#### commit-msg
+コミットメッセージが[Conventional Commits](https://www.conventionalcommits.org/)形式に従っているかチェックされます。
+
+**利用可能なコミットタイプ:**
+- `feat`: 新機能
+- `fix`: バグ修正
+- `docs`: ドキュメント
+- `style`: フォーマット等
+- `refactor`: リファクタリング
+- `perf`: パフォーマンス改善
+- `test`: テスト追加・修正
+- `build`: ビルドシステム
+- `ci`: CI設定
+- `chore`: その他の変更
+
+**コミットメッセージ例:**
+```bash
+git commit -m "feat: ユーザー認証機能を追加"
+git commit -m "fix: メッセージ送信時のエラーを修正"
+```
+
+#### Git Hooksを一時的にスキップする方法
+緊急時など、Hooksをスキップしたい場合：
+```bash
+git commit --no-verify -m "message"
+git push --no-verify
+```
+
+### CI/CD環境
+CI環境（GitHub Actions等）では、`HUSKY=0`環境変数が自動的に設定され、Hooksはスキップされます。
+
 ## Dockerを使用したデプロイ
 
 ### GitHub Container Registryからイメージを取得する
