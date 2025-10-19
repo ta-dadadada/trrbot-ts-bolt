@@ -21,7 +21,7 @@ export type SayFunction = (message: {
   thread_ts?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any; // Slackメッセージの型互換性のために必要
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) => Promise<any>; // Slack APIの戻り値型互換性のために必要
 
 /**
@@ -40,25 +40,30 @@ export interface CommandContext {
  */
 export interface Command {
   /**
-   * コマンド名
-   */
-  name: string;
-  
-  /**
    * コマンドの説明（ヘルプ表示用）
    */
   description: string;
-  
+
   /**
-   * コマンドの使用例（ヘルプ表示用）
+   * コマンドの使用例を生成する
+   * @param commandName コマンド名（エイリアスまたは正式名）
+   * @returns 使用例の配列
    */
-  examples: string[];
-  
+  getExamples(commandName: string): string[];
+
   /**
    * コマンドを実行する
    * @param context コマンド実行コンテキスト
    */
   execute(context: CommandContext): Promise<void>;
+
+  /**
+   * カスタムヘルプテキストを生成する（オプション）
+   * サブコマンド型コマンドなど、複雑なヘルプが必要な場合に実装する
+   * @param commandName コマンド名（エイリアスまたは正式名）
+   * @returns フォーマットされたヘルプテキスト
+   */
+  getHelpText?(commandName: string): string;
 }
 
 /**

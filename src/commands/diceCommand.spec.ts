@@ -22,7 +22,7 @@ describe('DiceCommand', () => {
       warn: vi.fn(),
       setLevel: vi.fn(),
       getLevel: vi.fn(),
-      setName: vi.fn()
+      setName: vi.fn(),
     } as Logger;
     mockEvent = {
       ts: '123456789.123456',
@@ -37,9 +37,9 @@ describe('DiceCommand', () => {
   });
 
   it('should have correct properties', () => {
-    expect(command.name).toBe('dice');
     expect(command.description).toBeDefined();
-    expect(command.examples).toHaveLength(4);
+    expect(command.getExamples).toBeDefined();
+    expect(command.getExamples('dice')).toHaveLength(4);
   });
 
   it('should return a random number between 1 and 6 when no arguments are provided', async () => {

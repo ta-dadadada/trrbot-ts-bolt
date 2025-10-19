@@ -1,7 +1,7 @@
 import { App, Logger, AllMiddlewareArgs } from '@slack/bolt';
 import { parseCommand } from '../utils/random';
 import { CommandContext, SlackEvent, SayFunction, getThreadTs } from '../commands/types';
-import { getCommand } from '../commands';
+import { getCommand, getCommandRegistration } from '../commands';
 
 /**
  * コマンド処理を行う関数
@@ -15,13 +15,13 @@ export const processCommand = async (
   event: SlackEvent,
   say: SayFunction,
   logger: Logger,
-  client: AllMiddlewareArgs['client']
+  client: AllMiddlewareArgs['client'],
 ): Promise<void> => {
   const threadTs = getThreadTs(event);
-  
+
   try {
     const args = parseCommand(text);
-    
+
     if (args.length === 0) {
       await say({
         text: '何かコマンドを指定してください。',
@@ -29,10 +29,25 @@ export const processCommand = async (
       });
       return;
     }
-    
+
     const commandName = args[0].toLowerCase();
     const command = getCommand(commandName);
-    
+
+    // DM専用コマンドのチェック
+    const registration = getCommandRegistration(commandName);
+    if (registration?.dmOnly) {
+      // DMかどうかを判定
+      const isDM = event.channel_type === 'im';
+
+      if (!isDM) {
+        await say({
+          text: 'このコマンドはDM専用です。DMで実行してください。',
+          ...(threadTs && { thread_ts: threadTs }),
+        });
+        return;
+      }
+    }
+
     // コマンドコンテキストを作成
     const context: CommandContext = {
       event,
@@ -41,7 +56,7 @@ export const processCommand = async (
       args: args.slice(1), // 最初の引数（コマンド名）を除いた残りの引数
       client,
     };
-    
+
     // コマンドを実行
     await command.execute(context);
   } catch (error) {

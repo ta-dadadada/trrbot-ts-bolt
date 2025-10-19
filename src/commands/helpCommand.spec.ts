@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { HelpCommand } from './helpCommand';
 import { Command, CommandContext } from './types';
+import type { CommandRegistration } from './index';
 import { WebClient } from '@slack/web-api';
 import type { Logger } from '@slack/bolt';
 import { BOT_MENTION_NAME } from '../config/constants';
@@ -8,38 +9,66 @@ import { BOT_MENTION_NAME } from '../config/constants';
 describe('HelpCommand', () => {
   it('should generate help text dynamically based on available commands', async () => {
     // モックのコマンドを作成
-    const mockCommands = [
+    const mockChoiceCommand: Command = {
+      description: '指定された選択肢からランダムに1つ選びます',
+      getExamples: (commandName: string) => [
+        `${BOT_MENTION_NAME} ${commandName} ラーメン カレー 寿司`,
+      ],
+      execute: vi.fn(),
+    };
+
+    const mockGroupChoiceCommand: Command = {
+      description: '指定されたグループからランダムに1つのアイテムを選びます',
+      getExamples: (commandName: string) => [`${BOT_MENTION_NAME} ${commandName} 食べ物`],
+      execute: vi.fn(),
+    };
+
+    const mockReactionCommand: Command = {
+      description: 'リアクションマッピングを管理します',
+      getExamples: (commandName: string) => [
+        `${BOT_MENTION_NAME} ${commandName} list`,
+        `${BOT_MENTION_NAME} ${commandName} add トリガー :emoji:`,
+        `${BOT_MENTION_NAME} ${commandName} remove トリガー :emoji:`,
+      ],
+      execute: vi.fn(),
+      getHelpText: (commandName: string) => `*${commandName}* - custom help\n`,
+    };
+
+    const mockHelpCommand: Command = {
+      description: 'このヘルプメッセージを表示します',
+      getExamples: (commandName: string) => [`${BOT_MENTION_NAME} ${commandName}`],
+      execute: vi.fn(),
+    };
+
+    const mockRegistrations: CommandRegistration[] = [
       {
-        name: 'choice',
-        description: '指定された選択肢からランダムに1つ選びます',
-        examples: [`${BOT_MENTION_NAME} choice ラーメン カレー 寿司`]
+        command: mockChoiceCommand,
+        primaryName: 'choice',
+        aliases: [],
       },
       {
-        name: 'groupChoice',
-        description: '指定されたグループからランダムに1つのアイテムを選びます',
-        examples: [`${BOT_MENTION_NAME} groupChoice 食べ物`]
+        command: mockGroupChoiceCommand,
+        primaryName: 'groupChoice',
+        aliases: ['gc'],
+        displayName: 'gc',
       },
       {
-        name: 'reaction',
-        description: 'リアクションマッピングを管理します',
-        examples: [
-          `${BOT_MENTION_NAME} reaction list`,
-          `${BOT_MENTION_NAME} reaction add トリガー :emoji:`,
-          `${BOT_MENTION_NAME} reaction remove トリガー :emoji:`
-        ]
+        command: mockReactionCommand,
+        primaryName: 'reaction',
+        aliases: [],
       },
       {
-        name: 'help',
-        description: 'このヘルプメッセージを表示します',
-        examples: [`${BOT_MENTION_NAME} help`]
-      }
+        command: mockHelpCommand,
+        primaryName: 'help',
+        aliases: [],
+      },
     ];
 
     // ヘルプコマンドのインスタンスを作成
     const helpCommand = new HelpCommand();
-    
-    // コマンド一覧を設定
-    helpCommand.setCommands(mockCommands as Command[]);
+
+    // コマンド登録情報を設定
+    helpCommand.setCommands(mockRegistrations);
 
     // sayのモック関数を作成
     const mockSay = vi.fn();
@@ -75,15 +104,12 @@ describe('HelpCommand', () => {
     expect(helpText).toContain('指定された選択肢からランダムに1つ選びます');
     expect(helpText).toContain(`${BOT_MENTION_NAME} choice ラーメン カレー 寿司`);
 
-    expect(helpText).toContain('*gc*');
+    expect(helpText).toContain('*gc (groupChoice)*');
     expect(helpText).toContain('指定されたグループからランダムに1つのアイテムを選びます');
     expect(helpText).toContain(`${BOT_MENTION_NAME} gc 食べ物`);
 
     expect(helpText).toContain('*reaction*');
-    expect(helpText).toContain('リアクションマッピングを管理します');
-    expect(helpText).toContain(`${BOT_MENTION_NAME} reaction list`);
-    expect(helpText).toContain(`${BOT_MENTION_NAME} reaction add トリガー :emoji:`);
-    expect(helpText).toContain(`${BOT_MENTION_NAME} reaction remove トリガー :emoji:`);
+    expect(helpText).toContain('custom help');
 
     expect(helpText).toContain('*help*');
     expect(helpText).toContain('このヘルプメッセージを表示します');
