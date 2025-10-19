@@ -20,12 +20,23 @@ COPY . .
 # TypeScriptのビルド
 RUN npm run build
 
+# 本番依存関係ステージ
+FROM node:22-alpine AS prod-deps
+
+WORKDIR /app
+
+# better-sqlite3のビルドに必要なパッケージをインストール
+RUN apk add --no-cache python3 make g++ sqlite-dev
+
+COPY package*.json ./
+
+# 本番依存関係のみインストール（ネイティブモジュールを含む）
+RUN HUSKY=0 npm ci --omit=dev
+
 # 本番ステージ
 FROM node:22-alpine AS production
 
 # 実行時に必要な最小限のパッケージのみインストール
-# better-sqlite3のネイティブモジュールは既にビルド済みなので、ビルドツールは不要
-# 実行時に必要なのはsqlite-libsのみ
 RUN apk add --no-cache sqlite-libs dumb-init
 
 # 作業ディレクトリを設定
@@ -40,15 +51,11 @@ USER node
 # パッケージ管理ファイルをコピー
 COPY --chown=node:node package*.json ./
 
-# 本番依存関係のみインストール
-# HUSKY=0でprepareスクリプトのHusky実行をスキップ（Docker内ではGit hooksは不要）
-RUN HUSKY=0 npm ci --omit=dev
-
 # ビルドステージからビルド済みのファイルをコピー
 COPY --from=builder --chown=node:node /app/dist ./dist
 
-# ビルド済みのbetter-sqlite3ネイティブモジュールをコピー
-COPY --from=builder --chown=node:node /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
+# 本番依存関係ステージからnode_modulesをコピー（better-sqlite3を含む全依存関係を確実に含める）
+COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 
 # dumb-initを使用してプロセスを適切に管理
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
