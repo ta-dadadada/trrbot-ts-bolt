@@ -6,9 +6,13 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
     commit-message:
       prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
       include: "scope"
+    versioning-strategy: increase
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -17,6 +21,30 @@ updates:
       # Node.js v22 LTSに固定するため、@types/nodeのメジャーバージョンアップを抑止
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+    groups:
+      # 開発依存関係をグループ化（patch/minorのみ）
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      # Slack Bolt関連をグループ化
+      slack:
+        patterns:
+          - "@slack/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # テスト・ビルドツールをグループ化
+      build-tools:
+        patterns:
+          - "vite"
+          - "vitest"
+          - "@vitest/*"
+          - "typescript"
+        update-types:
+          - "minor"
+          - "patch"
 
   # GitHub Actions依存関係の更新
   - package-ecosystem: "github-actions"
@@ -24,9 +52,16 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
     commit-message:
       prefix: "chore(ci)"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
       - "github-actions"
+    groups:
+      # GitHub Actionsを全てグループ化
+      github-actions:
+        patterns:
+          - "*"
