@@ -78,6 +78,65 @@ The bot defaults to Socket Mode (WebSocket connection) but can switch to HTTP mo
 - **Prettier** for formatting
 - `@typescript-eslint/no-explicit-any` is enforced as error
 
+### Git Hooks (Husky v9)
+This project uses Git Hooks to ensure code quality:
+
+- **pre-commit**: Runs `lint-staged` to automatically lint and format staged TypeScript files
+  - ESLint with `--fix` flag
+  - Prettier formatting
+- **pre-push**: Runs `npm test` to ensure all tests pass before pushing
+- **commit-msg**: Validates commit messages using `commitlint` (Conventional Commits format)
+
+**Setup**: Hooks are automatically installed when running `npm install` via the `prepare` script.
+
+**Configuration files**:
+- `.husky/`: Hook scripts directory (no shebang needed in Husky v9)
+- `commitlint.config.cjs`: Commit message rules (CommonJS format for ESM projects)
+- `lint-staged` section in `package.json`: Staged files processing rules
+
+**Commit Message Format** (Conventional Commits):
+```
+<type>: <subject>
+
+[optional body]
+
+[optional footer]
+```
+
+**Allowed types**:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style/formatting (no logic change)
+- `refactor`: Code refactoring
+- `perf`: Performance improvements
+- `test`: Test additions or modifications
+- `build`: Build system changes
+- `ci`: CI configuration changes
+- `chore`: Other changes (dependencies, etc.)
+- `revert`: Revert a previous commit
+
+**Examples**:
+```bash
+# Good commit messages
+git commit -m "feat: add user authentication"
+git commit -m "fix: resolve message sending error"
+git commit -m "docs: update API documentation"
+git commit -m "feat: グループ管理機能を追加"  # Japanese is allowed
+
+# Bad commit messages (will be rejected)
+git commit -m "updated files"  # Missing type
+git commit -m "added feature"  # Missing colon after type
+```
+
+**Japanese commit messages are allowed** - the `subject-case` rule is disabled to support Japanese text.
+
+**Bypassing hooks** (use sparingly):
+```bash
+git commit --no-verify
+git push --no-verify
+```
+
 ## Environment Variables
 
 Required variables (see `.env.example`):
