@@ -1,34 +1,70 @@
 # Development files
 .roo
-data
+.rooignore
+.clinerules
+*.local.md
+
+# Build outputs
 dist
+coverage
+
+# Dependencies
 node_modules
+
+# Data directories
+data
+trrbot-data
 
 # Environment files
 .env*
+!.env.example
 
-# Documentation
+# Documentation (exclude most, but keep essential ones)
 *.md
+!README.md
+!LICENSE.md
 
 # Git and GitHub
 .git
 .github
 .gitignore
+.gitattributes
+
+# Git hooks
+.husky
 
 # IDE and editor files
 .vscode
 .idea
 *.swp
 *.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # Test files
 **/*.spec.ts
 **/*.test.ts
+vitest.config.ts
 
 # CI/CD
 .dockerignore
 docker-compose.yml
+docker-compose.*.yml
 
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache
