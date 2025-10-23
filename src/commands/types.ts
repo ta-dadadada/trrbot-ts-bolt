@@ -1,6 +1,6 @@
 import { Logger } from '@slack/bolt';
 import { WebClient, ChatPostMessageResponse } from '@slack/web-api';
-import type { GenericMessageEvent } from '@slack/types';
+import type { GenericMessageEvent, Block, MessageAttachment } from '@slack/types';
 
 /**
  * Slackイベントの型定義
@@ -18,8 +18,8 @@ export type SayFunction = (
     | {
         text: string;
         thread_ts?: string;
-        blocks?: unknown[];
-        attachments?: unknown[];
+        blocks?: Block[];
+        attachments?: MessageAttachment[];
         mrkdwn?: boolean;
         unfurl_links?: boolean;
         unfurl_media?: boolean;
@@ -71,16 +71,10 @@ export interface Command {
 /**
  * スレッド内で返信するためのヘルパー関数
  * スレッド内のメッセージの場合は thread_ts を返す
- * スレッドのルートメッセージの場合は ts を返す（新しいスレッドを開始）
  * 通常のメッセージの場合は undefined を返す（チャンネルに直接返信）
  * @param event Slackイベント
  * @returns スレッドTS（存在する場合）
  */
 export const getThreadTs = (event: SlackEvent): string | undefined => {
-  // thread_ts が存在する場合、これはスレッド内のメッセージなのでそれを返す
-  if (event.thread_ts) {
-    return event.thread_ts;
-  }
-  // thread_ts がない場合、通常のメッセージなので undefined を返す
-  return undefined;
+  return event.thread_ts;
 };

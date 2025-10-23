@@ -36,7 +36,8 @@ class PinoBoltLogger implements BoltLogger {
   private logger: pino.Logger;
 
   constructor(moduleName: string, baseLogger?: pino.Logger) {
-    // baseLogger指定がなければ、現在の環境変数から新しいインスタンスを作成（テスト用）
+    // baseLogger指定がなければ、現在の環境変数から新しいインスタンスを作成（テスト用・特殊用途のみ推奨）
+    // ※本番環境では、グローバルインスタンスまたはexportされたcreateLogger関数を使用してください
     const pinoInstance = baseLogger || createPinoInstance();
     this.logger = pinoInstance.child({ module: moduleName });
   }

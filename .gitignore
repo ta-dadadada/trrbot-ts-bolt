@@ -35,6 +35,9 @@ Thumbs.db
 .roo
 .rooignore
 *.local.md
+.mcp.json
+.serena/
+RELEASE_NOTES_*.md
 
 # ログファイル
 *.log
