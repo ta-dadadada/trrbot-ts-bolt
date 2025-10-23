@@ -80,16 +80,17 @@ The bot defaults to Socket Mode (WebSocket connection) but can switch to HTTP mo
 
 ### Logging and Error Handling Strategy
 
-**Unified Logger (`@slack/logger`)**:
+**Unified Logger (`pino`)**:
 - Global logger instance shared across the application ([src/utils/logger.ts](src/utils/logger.ts))
 - Module-specific loggers created with `createLogger(moduleName)`
-- Log level controlled by `LOG_LEVEL` environment variable (DEBUG|INFO|WARN|ERROR)
-- Bolt app uses the same logger instance for consistency
+- Log level controlled by `LOG_LEVEL` environment variable (trace|debug|info|warn|error|fatal|silent)
+- Bolt app uses the same logger instance for consistency via `PinoBoltLogger` wrapper
 
 **Structured Logging**:
-- All logs include contextual information (user, command, channel, timestamp)
-- JSON-formatted context for easy parsing and analysis
-- Severity levels: DEBUG (development), INFO (production default), WARN, ERROR
+- All logs output as single-line JSON for easy parsing in CloudRun, CloudWatch, etc.
+- Logs include contextual information (user, command, channel, timestamp, module)
+- Pure JSON format: `{"level":"info","time":"2025-10-23T08:06:42.918Z","module":"database","message":"..."}`
+- Severity levels: trace, debug, info (production default), warn, error, fatal, silent
 
 **Error Handling Pattern**:
 - Custom error classes in [src/utils/errors.ts](src/utils/errors.ts):

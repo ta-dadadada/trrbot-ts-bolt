@@ -164,7 +164,7 @@ SLACK_BOT_TOKEN=xoxb-your-bot-token
 SLACK_SIGNING_SECRET=your-signing-secret
 SLACK_APP_TOKEN=xapp-your-app-token
 PORT=3000
-LOG_LEVEL=INFO  # オプション: DEBUG, INFO, WARN, ERROR（デフォルト: INFO）
+LOG_LEVEL=info  # オプション: trace | debug | info | warn | error | fatal | silent（デフォルト: info）
 ```
 
 **環境変数の説明**:
@@ -173,11 +173,14 @@ LOG_LEVEL=INFO  # オプション: DEBUG, INFO, WARN, ERROR（デフォルト: I
 - `SLACK_APP_TOKEN`: Slack App-Level Token（Socket Mode使用時に必須）
 - `PORT`: HTTPサーバーのポート番号（デフォルト: 3000）
 - `BOT_MENTION_NAME`: ヘルプメッセージ表示用のボットメンション名（デフォルト: @trrbot）
-- `LOG_LEVEL`: ログ出力レベル（オプション）
-  - `DEBUG`: 詳細なデバッグログ（開発環境推奨）
-  - `INFO`: 一般的な情報ログ（本番環境推奨、デフォルト）
-  - `WARN`: 警告メッセージのみ
-  - `ERROR`: エラーメッセージのみ
+- `LOG_LEVEL`: ログ出力レベル（オプション、大文字・小文字どちらでも可）
+  - `trace`: 最も詳細なログ（パフォーマンストレース用）
+  - `debug`: 詳細なデバッグログ（開発環境推奨）
+  - `info`: 一般的な情報ログ（本番環境推奨、デフォルト）
+  - `warn`: 警告メッセージのみ
+  - `error`: エラーメッセージのみ
+  - `fatal`: 致命的エラーのみ
+  - `silent`: ログ出力なし
 
 #### Dockerイメージのビルドと起動
 
