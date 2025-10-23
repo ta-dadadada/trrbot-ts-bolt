@@ -78,6 +78,53 @@ The bot defaults to Socket Mode (WebSocket connection) but can switch to HTTP mo
 - **Prettier** for formatting
 - `@typescript-eslint/no-explicit-any` is enforced as error
 
+### Logging and Error Handling Strategy
+
+**Unified Logger (`pino`)**:
+- Global logger instance shared across the application ([src/utils/logger.ts](src/utils/logger.ts))
+- Module-specific loggers created with `createLogger(moduleName)`
+- Log level controlled by `LOG_LEVEL` environment variable (trace|debug|info|warn|error|fatal|silent)
+- Bolt app uses the same logger instance for consistency via `PinoBoltLogger` wrapper
+
+**Structured Logging**:
+- All logs output as single-line JSON for easy parsing in CloudRun, CloudWatch, etc.
+- Logs include contextual information (user, command, channel, timestamp, module)
+- Pure JSON format: `{"level":"info","time":"2025-10-23T08:06:42.918Z","module":"database","message":"..."}`
+- Severity levels: trace, debug, info (production default), warn, error, fatal, silent
+
+**Error Handling Pattern**:
+- Custom error classes in [src/utils/errors.ts](src/utils/errors.ts):
+  - `BotError`: Base class with `userMessage`, `context`, `isRetryable`, `severity`
+  - `ValidationError`: User input errors (non-retryable, warn level)
+  - `DatabaseError`: DB operation errors (retryable, error level)
+  - `SlackAPIError`: Slack API errors (retryable, error level)
+- Centralized error handler in [src/utils/errorHandler.ts](src/utils/errorHandler.ts):
+  - `handleCommandError()`: Unified error handling for commands
+  - `logCommandSuccess()`: Success logging with context
+  - `logDebug()`: Debug logging helper
+
+**Usage in Commands**:
+```typescript
+import { handleCommandError, logCommandSuccess, logDebug } from '../utils/errorHandler';
+import { ValidationError } from '../utils/errors';
+
+async execute(context: CommandContext): Promise<void> {
+  try {
+    logDebug(logger, 'command-name', 'Operation start', { args });
+
+    if (!isValid) {
+      throw new ValidationError('Internal message', 'User message', { context });
+    }
+
+    // Command logic here
+
+    logCommandSuccess(logger, 'command-name', { user, result });
+  } catch (error) {
+    await handleCommandError(error, context, 'command-name');
+  }
+}
+```
+
 ### Git Hooks (Husky v9)
 This project uses Git Hooks to ensure code quality:
 

@@ -2,6 +2,7 @@ import { App, Logger, AllMiddlewareArgs } from '@slack/bolt';
 import { parseCommand } from '../utils/random';
 import { CommandContext, SlackEvent, SayFunction, getThreadTs } from '../commands/types';
 import { getCommand, getCommandRegistration } from '../commands';
+import { handleCommandError } from '../utils/errorHandler';
 
 /**
  * コマンド処理を行う関数
@@ -18,6 +19,15 @@ export const processCommand = async (
   client: AllMiddlewareArgs['client'],
 ): Promise<void> => {
   const threadTs = getThreadTs(event);
+
+  // コマンドコンテキストを作成（エラーハンドリングで使用）
+  const context: CommandContext = {
+    event,
+    say,
+    logger,
+    args: [], // 後で更新
+    client,
+  };
 
   try {
     const args = parseCommand(text);
@@ -48,23 +58,13 @@ export const processCommand = async (
       }
     }
 
-    // コマンドコンテキストを作成
-    const context: CommandContext = {
-      event,
-      say,
-      logger,
-      args: args.slice(1), // 最初の引数（コマンド名）を除いた残りの引数
-      client,
-    };
+    // コマンドコンテキストを更新
+    context.args = args.slice(1); // 最初の引数（コマンド名）を除いた残りの引数
 
     // コマンドを実行
     await command.execute(context);
   } catch (error) {
-    logger.error('コマンド処理でエラーが発生しました', error);
-    await say({
-      text: 'エラーが発生しました。',
-      ...(threadTs && { thread_ts: threadTs }),
-    });
+    await handleCommandError(error, context, 'mentionHandler');
   }
 };
 

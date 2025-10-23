@@ -27,12 +27,12 @@ export const registerMessageHandlers = (app: App): void => {
       // 通常のチャンネルメッセージの場合はリアクション処理を行う
       // メッセージテキストに対応するリアクションを取得
       const reactions = ReactionService.getReactionsForMessage(message.text);
-      
+
       // リアクションがある場合、それぞれのリアクションを追加
       if (reactions.length > 0) {
         // すべてのリアクションマッピングを取得
         const allMappings = ReactionService.getAllReactionMappings();
-        
+
         for (const reaction of reactions) {
           try {
             // リアクションを追加
@@ -41,7 +41,7 @@ export const registerMessageHandlers = (app: App): void => {
               timestamp: message.ts,
               name: reaction.replace(/:/g, ''), // コロンを削除（:smile: → smile）
             });
-            
+
             // 対応するトリガーテキストを見つけて使用回数をインクリメント
             for (const mapping of allMappings) {
               if (mapping.reaction === reaction && message.text.includes(mapping.triggerText)) {
@@ -50,12 +50,19 @@ export const registerMessageHandlers = (app: App): void => {
               }
             }
           } catch (error) {
-            logger.error(`リアクションの追加に失敗しました: ${reaction}`, error);
+            logger.warn('リアクション追加失敗', {
+              reaction,
+              channel: message.channel,
+              error: error instanceof Error ? error.message : String(error),
+            });
           }
         }
       }
     } catch (error) {
-      logger.error('メッセージハンドラでエラーが発生しました', error);
+      logger.error('メッセージハンドラエラー', {
+        channel: message.channel,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   });
 };
