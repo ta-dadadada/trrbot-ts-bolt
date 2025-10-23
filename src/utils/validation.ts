@@ -8,7 +8,7 @@ import { ValidationError } from './errors';
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHAR_PATTERN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/;
 
-// ValidationErrorを再エクスポート（互換性のため）
+// 既存のimport文との互換性のため、ValidationErrorを再エクスポート
 export { ValidationError };
 
 /**

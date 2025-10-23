@@ -19,9 +19,11 @@ registerMentionHandlers(app);
 (async () => {
   try {
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
-    const socketMode = process.env.SLACK_SOCKET_MODE !== 'false';
     await app.start(port);
-    logger.info('Boltアプリ起動', { port, mode: socketMode ? 'socket' : 'http' });
+    logger.info('Boltアプリ起動', {
+      port,
+      mode: process.env.SLACK_SOCKET_MODE !== 'false' ? 'socket' : 'http',
+    });
   } catch (error) {
     logger.error('アプリ起動失敗', {
       error: error instanceof Error ? error.message : String(error),

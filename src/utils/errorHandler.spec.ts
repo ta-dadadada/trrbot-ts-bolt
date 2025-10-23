@@ -142,7 +142,11 @@ describe('errorHandler', () => {
       expect(mockLogger.warn).toHaveBeenCalledTimes(1); // 元のエラーはwarn
       expect(mockLogger.error).toHaveBeenCalledTimes(1); // say失敗
       const errorCall = (mockLogger.error as ReturnType<typeof vi.fn>).mock.calls[0];
-      expect(errorCall[0]).toBe('Failed to send error message to user');
+      expect(errorCall[0]).toEqual({
+        message: 'Failed to send error message to user',
+        originalError: 'Test',
+        sayError: 'Say failed',
+      });
     });
 
     it('should respond in thread if event is in thread', async () => {

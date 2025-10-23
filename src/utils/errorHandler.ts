@@ -91,13 +91,11 @@ export async function handleCommandError(
       ...(threadTs && { thread_ts: threadTs }),
     });
   } catch (sayError) {
-    logger.error(
-      'Failed to send error message to user',
-      '\nOriginal error:',
-      logMessage,
-      '\nSay error:',
-      sayError instanceof Error ? sayError.message : String(sayError),
-    );
+    logger.error({
+      message: 'Failed to send error message to user',
+      originalError: logMessage,
+      sayError: sayError instanceof Error ? sayError.message : String(sayError),
+    });
   }
 }
 

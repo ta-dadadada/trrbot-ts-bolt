@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GroupChoiceCommand } from './groupChoiceCommand';
-import { SayFunction } from './types';
+import { SayFunction, SlackEvent } from './types';
 import { Logger } from '@slack/bolt';
 import { WebClient } from '@slack/web-api';
 import { GroupService } from '../services/groupService';
@@ -19,12 +19,16 @@ describe('GroupChoiceCommand', () => {
   let command: GroupChoiceCommand;
   let mockSay: SayFunction;
   let mockLogger: Logger;
-  let mockEvent: { ts: string; thread_ts?: string };
+  let mockEvent: SlackEvent;
   let mockClient: WebClient;
 
   beforeEach(() => {
     command = new GroupChoiceCommand();
-    mockSay = vi.fn().mockResolvedValue({});
+    mockSay = vi.fn().mockResolvedValue({
+      ok: true,
+      channel: 'C123456',
+      ts: '1234567890.123456',
+    });
     mockLogger = {
       error: vi.fn(),
       info: vi.fn(),
@@ -35,8 +39,14 @@ describe('GroupChoiceCommand', () => {
       setName: vi.fn(),
     } as Logger;
     mockEvent = {
-      ts: '123456789.123456',
-    };
+      type: 'message',
+      user: 'U123456',
+      channel: 'C123456',
+      channel_type: 'channel',
+      event_ts: '1234567890.123456',
+      ts: '1234567890.123456',
+      text: 'groupchoice',
+    } as SlackEvent;
     mockClient = {} as WebClient;
 
     // モックをリセット
