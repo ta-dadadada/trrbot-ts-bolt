@@ -2,6 +2,8 @@ import { Command, CommandContext, getThreadTs } from './types';
 import { GroupService } from '../services/groupService';
 import { BOT_MENTION_NAME } from '../config/constants';
 import { validateGroupName, validateItemText, ValidationError } from '../utils/validation';
+import { handleCommandError, logCommandSuccess } from '../utils/errorHandler';
+import { DatabaseError } from '../utils/errors';
 
 /**
  * グループコマンドの実装
@@ -158,7 +160,7 @@ export class GroupCommand implements Command {
    * グループを作成する
    */
   private async handleCreate(context: CommandContext, groupName: string): Promise<void> {
-    const { event, say } = context;
+    const { event, say, logger } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
 
@@ -166,24 +168,26 @@ export class GroupCommand implements Command {
       // グループ名のバリデーション
       const validatedGroupName = validateGroupName(groupName);
 
-      GroupService.createGroup(validatedGroupName);
+      try {
+        GroupService.createGroup(validatedGroupName);
+      } catch (error) {
+        throw new DatabaseError('Failed to create group', {
+          groupName: validatedGroupName,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
 
       await say({
         text: `グループ "${validatedGroupName}" を作成しました。`,
         thread_ts: threadTs,
       });
+
+      logCommandSuccess(logger, 'group-create', {
+        user: event.user,
+        groupName: validatedGroupName,
+      });
     } catch (error) {
-      if (error instanceof ValidationError) {
-        await say({
-          text: `バリデーションエラー: ${error.message}`,
-          thread_ts: threadTs,
-        });
-      } else {
-        await say({
-          text: `グループの作成に失敗しました: ${(error as Error).message}`,
-          thread_ts: threadTs,
-        });
-      }
+      await handleCommandError(error, context, 'group-create');
     }
   }
 

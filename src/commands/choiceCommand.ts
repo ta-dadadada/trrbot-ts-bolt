@@ -1,6 +1,8 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { getRandomItem } from '../utils/random';
 import { BOT_MENTION_NAME } from '../config/constants';
+import { handleCommandError, logCommandSuccess } from '../utils/errorHandler';
+import { ValidationError } from '../utils/errors';
 
 /**
  * 選択肢からランダムに1つを選ぶコマンドの実装
@@ -13,22 +15,30 @@ export class ChoiceCommand implements Command {
   }
 
   async execute(context: CommandContext): Promise<void> {
-    const { event, say, args } = context;
+    const { event, say, args, logger } = context;
     const threadTs = getThreadTs(event);
 
-    if (args.length === 0) {
+    try {
+      if (args.length === 0) {
+        throw new ValidationError('No choices provided', '選択肢を指定してください。', {
+          argsLength: 0,
+        });
+      }
+
+      const choice = getRandomItem(args);
+
       await say({
-        text: '選択肢を指定してください。',
+        text: `選ばれたのは: *${choice}*`,
         ...(threadTs && { thread_ts: threadTs }),
       });
-      return;
+
+      logCommandSuccess(logger, 'choice', {
+        user: event.user,
+        choicesCount: args.length,
+        selected: choice,
+      });
+    } catch (error) {
+      await handleCommandError(error, context, 'choice');
     }
-
-    const choice = getRandomItem(args);
-
-    await say({
-      text: `選ばれたのは: *${choice}*`,
-      ...(threadTs && { thread_ts: threadTs }),
-    });
   }
 }

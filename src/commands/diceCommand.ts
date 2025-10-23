@@ -1,6 +1,8 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { getRandomInt } from '../utils/random';
 import { BOT_MENTION_NAME } from '../config/constants';
+import { handleCommandError, logCommandSuccess, logDebug } from '../utils/errorHandler';
+import { ValidationError } from '../utils/errors';
 
 /**
  * サイコロを振るコマンドの実装
@@ -64,6 +66,8 @@ export class DiceCommand implements Command {
     const threadTs = getThreadTs(event);
 
     try {
+      logDebug(logger, 'dice', 'Parsing dice command', { args });
+
       // コマンド名自体がダイスコード形式かチェック
       // event.textが存在し、かつコマンド名（最初の単語）がダイスコード形式かチェック
       const commandName = event.text?.trim().split(/\s+/)[0] || '';
@@ -77,6 +81,12 @@ export class DiceCommand implements Command {
         await say({
           text: `🎲 ${diceCount}d${diceFaces} の結果: ${results.join(', ')} = *${total}*`,
           ...(threadTs && { thread_ts: threadTs }),
+        });
+
+        logCommandSuccess(logger, 'dice', {
+          user: event.user,
+          diceNotation: `${diceCount}d${diceFaces}`,
+          result: total,
         });
         return;
       }
@@ -94,6 +104,12 @@ export class DiceCommand implements Command {
             text: `🎲 ${diceCount}d${diceFaces} の結果: ${results.join(', ')} = *${total}*`,
             ...(threadTs && { thread_ts: threadTs }),
           });
+
+          logCommandSuccess(logger, 'dice', {
+            user: event.user,
+            diceNotation: `${diceCount}d${diceFaces}`,
+            result: total,
+          });
           return;
         }
       }
@@ -108,11 +124,11 @@ export class DiceCommand implements Command {
         const maxArg = parseInt(args[0], 10);
 
         if (isNaN(maxArg) || maxArg < 1) {
-          await say({
-            text: '有効な正の整数を指定してください。',
-            ...(threadTs && { thread_ts: threadTs }),
-          });
-          return;
+          throw new ValidationError(
+            `Invalid max value: ${args[0]}`,
+            '有効な正の整数を指定してください。',
+            { providedValue: args[0] },
+          );
         }
 
         max = maxArg;
@@ -124,12 +140,14 @@ export class DiceCommand implements Command {
         text: `🎲 結果: *${result}*`,
         ...(threadTs && { thread_ts: threadTs }),
       });
-    } catch (error) {
-      logger.error('サイコロコマンドの実行中にエラーが発生しました', error);
-      await say({
-        text: 'サイコロを振る際にエラーが発生しました。',
-        ...(threadTs && { thread_ts: threadTs }),
+
+      logCommandSuccess(logger, 'dice', {
+        user: event.user,
+        max,
+        result,
       });
+    } catch (error) {
+      await handleCommandError(error, context, 'dice');
     }
   }
 }

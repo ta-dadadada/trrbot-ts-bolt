@@ -1,4 +1,7 @@
 import db from '../config/database';
+import { createLogger } from './logger';
+
+const logger = createLogger('database');
 
 /**
  * データベースの初期化を行う
@@ -38,7 +41,7 @@ export const initializeDatabase = (): void => {
     );
   `);
 
-  console.log('データベースの初期化が完了しました。');
+  logger.info('データベース初期化完了');
 };
 
 /**
@@ -46,5 +49,5 @@ export const initializeDatabase = (): void => {
  */
 export const closeDatabase = (): void => {
   db.close();
-  console.log('データベース接続を閉じました。');
+  logger.info('データベース接続クローズ');
 };
