@@ -29,7 +29,11 @@ function logStructured(
   message: string,
   context: LogContext,
 ): void {
-  const contextStr = JSON.stringify(context, null, 2);
+  // 開発環境（DEBUG）では整形あり、本番環境では単一行で効率化
+  const isDevelopment = process.env.LOG_LEVEL === 'DEBUG';
+  const contextStr = isDevelopment
+    ? JSON.stringify(context, null, 2) // 開発: 読みやすさ優先
+    : JSON.stringify(context); // 本番: 効率優先
   logger[level](message, '\nContext:', contextStr);
 }
 
@@ -126,7 +130,10 @@ export function logDebug(
 ): void {
   logger.setName(`cmd:${commandName}`);
   if (data) {
-    logger.debug(message, '\nData:', JSON.stringify(data, null, 2));
+    // 開発環境（DEBUG）では整形あり、本番環境では単一行で効率化
+    const isDevelopment = process.env.LOG_LEVEL === 'DEBUG';
+    const dataStr = isDevelopment ? JSON.stringify(data, null, 2) : JSON.stringify(data);
+    logger.debug(message, '\nData:', dataStr);
   } else {
     logger.debug(message);
   }

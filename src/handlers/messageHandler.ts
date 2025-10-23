@@ -1,9 +1,6 @@
 import { App } from '@slack/bolt';
 import { ReactionService } from '../services/reactionService';
 import { processCommand } from './mentionHandler';
-import { createLogger } from '../utils/logger';
-
-const logger = createLogger('messageHandler');
 
 /**
  * メッセージイベントハンドラの登録
@@ -11,7 +8,7 @@ const logger = createLogger('messageHandler');
  */
 export const registerMessageHandlers = (app: App): void => {
   // メッセージイベントのリスナー
-  app.message(async ({ message, client, logger: boltLogger, say }) => {
+  app.message(async ({ message, client, logger, say }) => {
     try {
       // メッセージイベントの型チェック
       if (!('text' in message) || !message.text) {
@@ -23,7 +20,7 @@ export const registerMessageHandlers = (app: App): void => {
 
       // DMの場合はコマンド処理を行う
       if (isDM) {
-        await processCommand(message.text, message, say, boltLogger, client);
+        await processCommand(message.text, message, say, logger, client);
         return;
       }
 

@@ -204,5 +204,70 @@ describe('errorHandler', () => {
       expect(mockLogger.setName).toHaveBeenCalledWith('cmd:help');
       expect(mockLogger.debug).toHaveBeenCalledWith('Showing help text');
     });
+
+    it('should use pretty-printed JSON in DEBUG mode', () => {
+      const originalLogLevel = process.env.LOG_LEVEL;
+      process.env.LOG_LEVEL = 'DEBUG';
+
+      logDebug(mockLogger, 'dice', 'Test message', { key: 'value' });
+
+      const debugArgs = (mockLogger.debug as ReturnType<typeof vi.fn>).mock.calls[0];
+      const dataStr = debugArgs[2];
+      // 整形されたJSON（複数行）を確認
+      expect(dataStr).toContain('\n');
+      expect(dataStr).toContain('  '); // 2スペースインデント
+
+      process.env.LOG_LEVEL = originalLogLevel;
+    });
+
+    it('should use single-line JSON in non-DEBUG mode', () => {
+      const originalLogLevel = process.env.LOG_LEVEL;
+      process.env.LOG_LEVEL = 'INFO';
+
+      logDebug(mockLogger, 'dice', 'Test message', { key: 'value' });
+
+      const debugArgs = (mockLogger.debug as ReturnType<typeof vi.fn>).mock.calls[0];
+      const dataStr = debugArgs[2];
+      // 単一行JSON（改行なし、インデントなし）を確認
+      expect(dataStr).toBe('{"key":"value"}');
+
+      process.env.LOG_LEVEL = originalLogLevel;
+    });
+  });
+
+  describe('JSON formatting based on LOG_LEVEL', () => {
+    it('should use pretty-printed JSON for structured logs in DEBUG mode', async () => {
+      const originalLogLevel = process.env.LOG_LEVEL;
+      process.env.LOG_LEVEL = 'DEBUG';
+
+      const error = new ValidationError('Test error', 'Test message', { customField: 'value' });
+      await handleCommandError(error, mockContext, 'test');
+
+      const warnArgs = (mockLogger.warn as ReturnType<typeof vi.fn>).mock.calls[0];
+      const contextStr = warnArgs[2];
+      // 整形されたJSON（複数行、インデント）を確認
+      expect(contextStr).toContain('\n');
+      expect(contextStr).toContain('  '); // 2スペースインデント
+
+      process.env.LOG_LEVEL = originalLogLevel;
+    });
+
+    it('should use single-line JSON for structured logs in non-DEBUG mode', async () => {
+      const originalLogLevel = process.env.LOG_LEVEL;
+      process.env.LOG_LEVEL = 'INFO';
+
+      const error = new ValidationError('Test error', 'Test message', { customField: 'value' });
+      await handleCommandError(error, mockContext, 'test');
+
+      const warnArgs = (mockLogger.warn as ReturnType<typeof vi.fn>).mock.calls[0];
+      const contextStr = warnArgs[2];
+      // 単一行JSON（改行なし）を確認
+      const parsed = JSON.parse(contextStr);
+      expect(parsed.customField).toBe('value');
+      // 整形されていないことを確認（2スペースインデントなし）
+      expect(contextStr).not.toContain('\n  ');
+
+      process.env.LOG_LEVEL = originalLogLevel;
+    });
   });
 });
