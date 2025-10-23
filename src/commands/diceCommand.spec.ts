@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DiceCommand } from './diceCommand';
-import { SayFunction } from './types';
+import { SayFunction, SlackEvent } from './types';
 import { Logger } from '@slack/bolt';
 import { WebClient } from '@slack/web-api';
 import * as randomUtils from '../utils/random';
@@ -9,12 +9,16 @@ describe('DiceCommand', () => {
   let command: DiceCommand;
   let mockSay: SayFunction;
   let mockLogger: Logger;
-  let mockEvent: { ts: string; thread_ts?: string };
+  let mockEvent: SlackEvent;
   let mockClient: WebClient;
 
   beforeEach(() => {
     command = new DiceCommand();
-    mockSay = vi.fn().mockResolvedValue({});
+    mockSay = vi.fn().mockResolvedValue({
+      ok: true,
+      channel: 'C123456',
+      ts: '1234567890.123456',
+    });
     mockLogger = {
       error: vi.fn(),
       info: vi.fn(),
@@ -25,8 +29,14 @@ describe('DiceCommand', () => {
       setName: vi.fn(),
     } as Logger;
     mockEvent = {
-      ts: '123456789.123456',
-    };
+      type: 'message',
+      user: 'U123456',
+      channel: 'C123456',
+      channel_type: 'channel',
+      event_ts: '1234567890.123456',
+      ts: '1234567890.123456',
+      text: 'dice',
+    } as SlackEvent;
     mockClient = {} as WebClient;
 
     // getRandomIntのモック

@@ -78,6 +78,43 @@ The bot defaults to Socket Mode (WebSocket connection) but can switch to HTTP mo
 - **Prettier** for formatting
 - `@typescript-eslint/no-explicit-any` is enforced as error
 
+### Type Safety
+This project uses **Slack official type definitions** from `@slack/types` and `@slack/web-api` to ensure type safety:
+
+- **SlackEvent**: Uses `GenericMessageEvent` from `@slack/types` instead of custom `any` types
+  - Required properties: `type`, `user`, `channel`, `channel_type`, `event_ts`, `ts`
+  - Optional properties: `text`, `thread_ts`, and many others
+- **SayFunction**: Based on Slack's official types, accepts both string and object messages
+  - Return type: `ChatPostMessageResponse` from `@slack/web-api`
+- **Benefits**:
+  - Complete IDE autocomplete for all Slack event properties
+  - Compile-time type checking prevents runtime errors
+  - Automatic updates when Slack SDK changes
+  - Zero maintenance overhead for type definitions
+
+**Test Mock Patterns**:
+```typescript
+// SlackEvent mock with required properties
+const mockEvent: SlackEvent = {
+  type: 'message',
+  user: 'U123456',
+  channel: 'C123456',
+  channel_type: 'channel',
+  event_ts: '1234567890.123456',
+  ts: '1234567890.123456',
+  text: 'test message',
+} as SlackEvent;
+
+// SayFunction mock with proper return type
+const mockSay: SayFunction = vi.fn().mockResolvedValue({
+  ok: true,
+  channel: 'C123456',
+  ts: '1234567890.123456',
+});
+```
+
+See [src/commands/types.spec.ts](src/commands/types.spec.ts) for comprehensive type validation tests.
+
 ### Logging and Error Handling Strategy
 
 **Unified Logger (`pino`)**:
