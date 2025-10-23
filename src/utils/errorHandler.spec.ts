@@ -49,11 +49,15 @@ describe('errorHandler', () => {
       // ロガー名の設定を確認
       expect(mockLogger.setName).toHaveBeenCalledWith('cmd:dice');
 
-      // 警告レベルでログ出力されることを確認
+      // 警告レベルでログ出力されることを確認（Pinoはオブジェクトを直接渡す）
       expect(mockLogger.warn).toHaveBeenCalled();
       const warnArgs = (mockLogger.warn as ReturnType<typeof vi.fn>).mock.calls[0];
-      expect(warnArgs[0]).toBe('Invalid input');
-      expect(warnArgs).toContain('\nContext:');
+      const logEntry = warnArgs[0]; // Pinoはオブジェクトなのでそのまま
+      expect(logEntry.message).toBe('Invalid input');
+      expect(logEntry.command).toBe('dice');
+      expect(logEntry.errorName).toBe('ValidationError');
+      expect(logEntry.isRetryable).toBe(false);
+      expect(logEntry.value).toBe('invalid');
 
       // ユーザーへの通知を確認
       expect(mockSay).toHaveBeenCalledWith(
@@ -72,7 +76,10 @@ describe('errorHandler', () => {
       expect(mockLogger.error).toHaveBeenCalled();
 
       const errorArgs = (mockLogger.error as ReturnType<typeof vi.fn>).mock.calls[0];
-      expect(errorArgs[0]).toBe('Database connection failed');
+      const logEntry = errorArgs[0];
+      expect(logEntry.message).toBe('Database connection failed');
+      expect(logEntry.errorName).toBe('DatabaseError');
+      expect(logEntry.isRetryable).toBe(true);
     });
 
     it('should handle standard Error', async () => {
@@ -84,7 +91,10 @@ describe('errorHandler', () => {
       expect(mockLogger.error).toHaveBeenCalled();
 
       const errorArgs = (mockLogger.error as ReturnType<typeof vi.fn>).mock.calls[0];
-      expect(errorArgs[0]).toBe('Unexpected error');
+      const logEntry = errorArgs[0];
+      expect(logEntry.message).toBe('Unexpected error');
+      expect(logEntry.errorName).toBe('Error');
+      expect(logEntry.stack).toBeDefined();
     });
 
     it('should handle unknown error types', async () => {
@@ -93,6 +103,10 @@ describe('errorHandler', () => {
       await handleCommandError(error, mockContext, 'dice');
 
       expect(mockLogger.error).toHaveBeenCalled();
+      const errorArgs = (mockLogger.error as ReturnType<typeof vi.fn>).mock.calls[0];
+      const logEntry = errorArgs[0];
+      expect(logEntry.message).toBe('String error');
+
       expect(mockSay).toHaveBeenCalledWith(
         expect.objectContaining({
           text: 'エラーが発生しました。',
@@ -106,17 +120,16 @@ describe('errorHandler', () => {
       await handleCommandError(error, mockContext, 'test');
 
       const warnArgs = (mockLogger.warn as ReturnType<typeof vi.fn>).mock.calls[0];
-      const contextStr = warnArgs[2]; // "\nContext:" の次の引数
-      const context = JSON.parse(contextStr);
+      const logEntry = warnArgs[0];
 
-      expect(context.command).toBe('test');
-      expect(context.user).toBe('U123456');
-      expect(context.channel).toBe('C789012');
-      expect(context.channelType).toBe('channel');
-      expect(context.timestamp).toBe('1234567890.123456');
-      expect(context.errorName).toBe('ValidationError');
-      expect(context.isRetryable).toBe(false);
-      expect(context.customField).toBe('value');
+      expect(logEntry.command).toBe('test');
+      expect(logEntry.user).toBe('U123456');
+      expect(logEntry.channel).toBe('C789012');
+      expect(logEntry.channelType).toBe('channel');
+      expect(logEntry.timestamp).toBe('1234567890.123456');
+      expect(logEntry.errorName).toBe('ValidationError');
+      expect(logEntry.isRetryable).toBe(false);
+      expect(logEntry.customField).toBe('value');
     });
 
     it('should handle say failure gracefully', async () => {
@@ -166,7 +179,10 @@ describe('errorHandler', () => {
       expect(mockLogger.info).toHaveBeenCalled();
 
       const infoArgs = (mockLogger.info as ReturnType<typeof vi.fn>).mock.calls[0];
-      expect(infoArgs[0]).toBe('Command executed successfully');
+      const logEntry = infoArgs[0];
+      expect(logEntry.message).toBe('Command executed successfully');
+      expect(logEntry.user).toBe('U123');
+      expect(logEntry.result).toBe(4);
     });
 
     it('should include context in log', () => {
@@ -177,12 +193,12 @@ describe('errorHandler', () => {
       });
 
       const infoArgs = (mockLogger.info as ReturnType<typeof vi.fn>).mock.calls[0];
-      const contextStr = infoArgs[2];
-      const context = JSON.parse(contextStr);
+      const logEntry = infoArgs[0];
 
-      expect(context.user).toBe('U123');
-      expect(context.groupName).toBe('test-group');
-      expect(context.operation).toBe('create');
+      expect(logEntry.message).toBe('Command executed successfully');
+      expect(logEntry.user).toBe('U123');
+      expect(logEntry.groupName).toBe('test-group');
+      expect(logEntry.operation).toBe('create');
     });
   });
 
@@ -194,80 +210,61 @@ describe('errorHandler', () => {
       expect(mockLogger.debug).toHaveBeenCalled();
 
       const debugArgs = (mockLogger.debug as ReturnType<typeof vi.fn>).mock.calls[0];
-      expect(debugArgs[0]).toBe('Parsing dice command');
-      expect(debugArgs[1]).toBe('\nData:');
+      const logEntry = debugArgs[0];
+      expect(logEntry.message).toBe('Parsing dice command');
+      expect(logEntry.args).toEqual(['2d6']);
     });
 
     it('should work without data parameter', () => {
       logDebug(mockLogger, 'help', 'Showing help text');
 
       expect(mockLogger.setName).toHaveBeenCalledWith('cmd:help');
-      expect(mockLogger.debug).toHaveBeenCalledWith('Showing help text');
-    });
-
-    it('should use pretty-printed JSON in DEBUG mode', () => {
-      const originalLogLevel = process.env.LOG_LEVEL;
-      process.env.LOG_LEVEL = 'DEBUG';
-
-      logDebug(mockLogger, 'dice', 'Test message', { key: 'value' });
+      expect(mockLogger.debug).toHaveBeenCalled();
 
       const debugArgs = (mockLogger.debug as ReturnType<typeof vi.fn>).mock.calls[0];
-      const dataStr = debugArgs[2];
-      // 整形されたJSON（複数行）を確認
-      expect(dataStr).toContain('\n');
-      expect(dataStr).toContain('  '); // 2スペースインデント
-
-      process.env.LOG_LEVEL = originalLogLevel;
-    });
-
-    it('should use single-line JSON in non-DEBUG mode', () => {
-      const originalLogLevel = process.env.LOG_LEVEL;
-      process.env.LOG_LEVEL = 'INFO';
-
-      logDebug(mockLogger, 'dice', 'Test message', { key: 'value' });
-
-      const debugArgs = (mockLogger.debug as ReturnType<typeof vi.fn>).mock.calls[0];
-      const dataStr = debugArgs[2];
-      // 単一行JSON（改行なし、インデントなし）を確認
-      expect(dataStr).toBe('{"key":"value"}');
-
-      process.env.LOG_LEVEL = originalLogLevel;
+      const logEntry = debugArgs[0];
+      expect(logEntry.message).toBe('Showing help text');
     });
   });
 
-  describe('JSON formatting based on LOG_LEVEL', () => {
-    it('should use pretty-printed JSON for structured logs in DEBUG mode', async () => {
-      const originalLogLevel = process.env.LOG_LEVEL;
-      process.env.LOG_LEVEL = 'DEBUG';
-
+  describe('Pino JSON output format', () => {
+    it('should output objects directly for Pino to convert to JSON', async () => {
       const error = new ValidationError('Test error', 'Test message', { customField: 'value' });
       await handleCommandError(error, mockContext, 'test');
 
       const warnArgs = (mockLogger.warn as ReturnType<typeof vi.fn>).mock.calls[0];
-      const contextStr = warnArgs[2];
-      // 整形されたJSON（複数行、インデント）を確認
-      expect(contextStr).toContain('\n');
-      expect(contextStr).toContain('  '); // 2スペースインデント
+      const logEntry = warnArgs[0];
 
-      process.env.LOG_LEVEL = originalLogLevel;
+      // Pinoはオブジェクトを受け取り、内部でJSONに変換
+      expect(typeof logEntry).toBe('object');
+      expect(logEntry).toHaveProperty('message');
+      expect(logEntry).toHaveProperty('customField');
+      expect(logEntry.customField).toBe('value');
     });
 
-    it('should use single-line JSON for structured logs in non-DEBUG mode', async () => {
-      const originalLogLevel = process.env.LOG_LEVEL;
-      process.env.LOG_LEVEL = 'INFO';
+    it('should maintain structured log format for debugging', () => {
+      logDebug(mockLogger, 'test', 'Debug message', { key: 'value', nested: { a: 1 } });
 
-      const error = new ValidationError('Test error', 'Test message', { customField: 'value' });
-      await handleCommandError(error, mockContext, 'test');
+      const debugArgs = (mockLogger.debug as ReturnType<typeof vi.fn>).mock.calls[0];
+      const logEntry = debugArgs[0];
 
-      const warnArgs = (mockLogger.warn as ReturnType<typeof vi.fn>).mock.calls[0];
-      const contextStr = warnArgs[2];
-      // 単一行JSON（改行なし）を確認
-      const parsed = JSON.parse(contextStr);
-      expect(parsed.customField).toBe('value');
-      // 整形されていないことを確認（2スペースインデントなし）
-      expect(contextStr).not.toContain('\n  ');
+      expect(typeof logEntry).toBe('object');
+      expect(logEntry.message).toBe('Debug message');
+      expect(logEntry.key).toBe('value');
+      expect(logEntry.nested).toEqual({ a: 1 });
+    });
 
-      process.env.LOG_LEVEL = originalLogLevel;
+    it('should pass objects that Pino will serialize to JSON', () => {
+      logCommandSuccess(mockLogger, 'test', { user: 'U123', action: 'completed' });
+
+      const infoArgs = (mockLogger.info as ReturnType<typeof vi.fn>).mock.calls[0];
+      const logEntry = infoArgs[0];
+
+      // Pinoに渡されるのはオブジェクト（Pinoが内部でJSON.stringifyする）
+      expect(typeof logEntry).toBe('object');
+      expect(logEntry.message).toBe('Command executed successfully');
+      expect(logEntry.user).toBe('U123');
+      expect(logEntry.action).toBe('completed');
     });
   });
 });

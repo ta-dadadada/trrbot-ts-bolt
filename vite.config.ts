@@ -23,6 +23,8 @@ export default defineConfig({
         '@slack/bolt',
         'dotenv',
         'better-sqlite3',
+        'pino',
+        'pino-pretty',
         // Node.js 組み込みモジュール
         'path',
         'fs',

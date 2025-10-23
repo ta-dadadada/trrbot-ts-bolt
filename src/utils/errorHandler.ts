@@ -17,7 +17,8 @@ interface LogContext {
 }
 
 /**
- * 構造化ログ出力
+ * 構造化ログ出力（単一行JSON形式）
+ * Pinoが自動的にオブジェクトをJSONに変換
  * @param logger Slack Bolt Logger
  * @param level ログレベル
  * @param message メインメッセージ
@@ -29,12 +30,12 @@ function logStructured(
   message: string,
   context: LogContext,
 ): void {
-  // 開発環境（DEBUG）では整形あり、本番環境では単一行で効率化
-  const isDevelopment = process.env.LOG_LEVEL === 'DEBUG';
-  const contextStr = isDevelopment
-    ? JSON.stringify(context, null, 2) // 開発: 読みやすさ優先
-    : JSON.stringify(context); // 本番: 効率優先
-  logger[level](message, '\nContext:', contextStr);
+  // Pinoがオブジェクトを単一行JSONに自動変換
+  const logEntry = {
+    message,
+    ...context,
+  };
+  logger[level](logEntry);
 }
 
 /**
@@ -116,7 +117,8 @@ export function logCommandSuccess(
 }
 
 /**
- * デバッグログ出力
+ * デバッグログ出力（単一行JSON形式）
+ * Pinoが自動的にオブジェクトをJSONに変換
  * @param logger Logger
  * @param commandName コマンド名
  * @param message メッセージ
@@ -129,12 +131,6 @@ export function logDebug(
   data?: Record<string, unknown>,
 ): void {
   logger.setName(`cmd:${commandName}`);
-  if (data) {
-    // 開発環境（DEBUG）では整形あり、本番環境では単一行で効率化
-    const isDevelopment = process.env.LOG_LEVEL === 'DEBUG';
-    const dataStr = isDevelopment ? JSON.stringify(data, null, 2) : JSON.stringify(data);
-    logger.debug(message, '\nData:', dataStr);
-  } else {
-    logger.debug(message);
-  }
+  const logEntry = data ? { message, ...data } : { message };
+  logger.debug(logEntry);
 }
