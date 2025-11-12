@@ -1,7 +1,16 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getRandomItem, getRandomInt, parseCommand } from './random';
 
 describe('ランダムユーティリティ', () => {
+  let originalMath: Math;
+
+  beforeEach(() => {
+    originalMath = global.Math;
+  });
+
+  afterEach(() => {
+    global.Math = originalMath;
+  });
   describe('getRandomItem', () => {
     it('空の配列の場合はundefinedを返すこと', () => {
       const result = getRandomItem([]);
@@ -16,7 +25,7 @@ describe('ランダムユーティリティ', () => {
 
       const items = ['A', 'B', 'C'];
       const result = getRandomItem(items);
-      
+
       // 0.5 * 3 = 1.5 → Math.floor(1.5) = 1 → items[1] = 'B'
       expect(result).toBe('B');
     });
@@ -31,7 +40,7 @@ describe('ランダムユーティリティ', () => {
 
       // 1から10の範囲でテスト
       const result = getRandomInt(1, 10);
-      
+
       // 0.5 * (10 - 1 + 1) + 1 = 0.5 * 10 + 1 = 5 + 1 = 6
       expect(result).toBe(6);
     });
@@ -49,7 +58,7 @@ describe('ランダムユーティリティ', () => {
 
       // 1.5から10.8の範囲でテスト
       const result = getRandomInt(1.5, 10.8);
-      
+
       // Math.ceil(1.5) = 2, Math.floor(10.8) = 10
       // 0.5 * (10 - 2 + 1) + 2 = 0.5 * 9 + 2 = 4.5 + 2 = 6.5 → Math.floor(6.5) = 6
       expect(result).toBe(6);

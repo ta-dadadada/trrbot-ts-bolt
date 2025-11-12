@@ -3,13 +3,16 @@ import { App } from '@slack/bolt';
 import dotenv from 'dotenv';
 
 // モックの作成
-vi.mock('@slack/bolt', () => ({
-  App: vi.fn().mockImplementation(() => ({
-    message: vi.fn().mockReturnThis(),
-    event: vi.fn().mockReturnThis(),
-    start: vi.fn().mockResolvedValue(undefined),
-  })),
-}));
+vi.mock('@slack/bolt', () => {
+  const MockApp = vi.fn().mockImplementation(function () {
+    return {
+      message: vi.fn().mockReturnThis(),
+      event: vi.fn().mockReturnThis(),
+      start: vi.fn().mockResolvedValue(undefined),
+    };
+  });
+  return { App: MockApp };
+});
 
 vi.mock('dotenv', () => ({
   default: {
