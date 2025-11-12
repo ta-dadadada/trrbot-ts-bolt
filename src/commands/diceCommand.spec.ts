@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DiceCommand } from './diceCommand';
 import { SayFunction, SlackEvent } from './types';
 import { Logger } from '@slack/bolt';
@@ -44,6 +44,10 @@ describe('DiceCommand', () => {
       // テスト用に固定値を返す
       return 4;
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should have correct properties', () => {
