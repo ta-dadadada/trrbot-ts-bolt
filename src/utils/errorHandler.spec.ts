@@ -20,17 +20,24 @@ describe('errorHandler', () => {
       getLevel: vi.fn(),
     } as unknown as Logger;
 
-    mockSay = vi.fn();
+    mockSay = vi.fn().mockResolvedValue({
+      ok: true,
+      channel: 'C789012',
+      ts: '1234567890.123456',
+    });
 
     mockContext = {
       event: {
+        type: 'message',
+        subtype: undefined,
+        event_ts: '1234567890.123456',
         text: 'dice invalid',
         ts: '1234567890.123456',
         user: 'U123456',
         channel: 'C789012',
         channel_type: 'channel',
       },
-      say: mockSay,
+      say: mockSay as never,
       logger: mockLogger,
       args: ['invalid'],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

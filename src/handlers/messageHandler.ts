@@ -10,8 +10,18 @@ export const registerMessageHandlers = (app: App): void => {
   // メッセージイベントのリスナー
   app.message(async ({ message, client, logger, say }) => {
     try {
+      // GenericMessageEventのみを処理（bot_messageなどのsubtypeを除外）
+      if (message.subtype !== undefined) {
+        return;
+      }
+
       // メッセージイベントの型チェック
       if (!('text' in message) || !message.text) {
+        return;
+      }
+
+      // channel_typeがGenericMessageEventに存在することを確認
+      if (!('channel_type' in message)) {
         return;
       }
 

@@ -78,6 +78,20 @@ export const registerMentionHandlers = (app: App): void => {
     // 最初のメンション（ボット自身へのメンション）だけを削除
     // 例: "<@BOT_ID> command <@USER1> <@USER2>" -> "command <@USER1> <@USER2>"
     const text = event.text.replace(/^<@[A-Z0-9]+>/, '').trim();
-    await processCommand(text, event, say, logger, client);
+
+    // AppMentionEventをSlackEvent（GenericMessageEvent）に変換
+    const slackEvent: SlackEvent = {
+      type: 'message',
+      subtype: undefined,
+      user: event.user || '',
+      channel: event.channel,
+      channel_type: 'channel',
+      event_ts: event.event_ts,
+      ts: event.ts,
+      text: event.text,
+      thread_ts: event.thread_ts,
+    };
+
+    await processCommand(text, slackEvent, say, logger, client);
   });
 };
