@@ -82,7 +82,13 @@ class PinoBoltLogger implements BoltLogger {
         return LogLevel.WARN;
       case 'error':
       case 'fatal':
+        return LogLevel.ERROR;
       case 'silent':
+        // Pinoの'silent'レベルは全てのログを無効化しますが、BoltのLogLevelにはSILENT相当がありません。
+        // そのため、ERRORにフォールバックします。
+        // 注意: この場合、実際のログ動作はPino側で制御されるため、
+        // このマッピングはBoltのLogLevel型を満たすための形式的なものです。
+        return LogLevel.ERROR;
       default:
         return LogLevel.ERROR;
     }

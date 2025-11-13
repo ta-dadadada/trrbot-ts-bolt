@@ -107,17 +107,14 @@ export const registerMentionHandlers = (app: App): void => {
     const text = event.text.replace(/^<@[A-Z0-9]+>/, '').trim();
 
     // AppMentionEventをSlackEvent（GenericMessageEvent）に変換
-    // app_mentionイベントにもchannel_typeが含まれている（実行時に確認済み）
-    // フォールバックとしてチャンネルIDから推定する関数も用意
+    // AppMentionEventにはchannel_typeプロパティが型定義上存在しないため、
+    // チャンネルIDのプレフィックスから推定する
     const slackEvent: SlackEvent = {
       type: 'message',
       subtype: undefined,
       user: event.user || '',
       channel: event.channel,
-      channel_type:
-        'channel_type' in event
-          ? (event.channel_type as 'channel' | 'im' | 'mpim' | 'group')
-          : inferChannelType(event.channel),
+      channel_type: inferChannelType(event.channel),
       event_ts: event.event_ts,
       ts: event.ts,
       text: event.text,
