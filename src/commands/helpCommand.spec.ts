@@ -76,6 +76,12 @@ describe('HelpCommand', () => {
     // モックのコンテキストを作成
     const mockContext: CommandContext = {
       event: {
+        type: 'message',
+        subtype: undefined,
+        user: 'U123456',
+        channel: 'C123456',
+        channel_type: 'channel',
+        event_ts: '1234567890.123456',
         text: `${BOT_MENTION_NAME} help`,
         ts: '1234567890.123456',
       },

@@ -1,5 +1,6 @@
 import pino from 'pino';
 import type { Logger as BoltLogger } from '@slack/logger';
+import { LogLevel } from '@slack/logger';
 
 /**
  * Pino loggerインスタンスを作成（環境変数を考慮）
@@ -67,8 +68,30 @@ class PinoBoltLogger implements BoltLogger {
     this.logger.level = level.toLowerCase();
   }
 
-  getLevel(): string {
-    return this.logger.level;
+  getLevel(): LogLevel {
+    // Pinoのログレベル（trace, debug, info, warn, error, fatal, silent）を
+    // BoltのLogLevel（DEBUG, INFO, WARN, ERROR）にマッピング
+    const pinoLevel = this.logger.level;
+    switch (pinoLevel) {
+      case 'trace':
+      case 'debug':
+        return LogLevel.DEBUG;
+      case 'info':
+        return LogLevel.INFO;
+      case 'warn':
+        return LogLevel.WARN;
+      case 'error':
+      case 'fatal':
+        return LogLevel.ERROR;
+      case 'silent':
+        // Pinoの'silent'レベルは全てのログを無効化しますが、BoltのLogLevelにはSILENT相当がありません。
+        // そのため、ERRORにフォールバックします。
+        // 注意: この場合、実際のログ動作はPino側で制御されるため、
+        // このマッピングはBoltのLogLevel型を満たすための形式的なものです。
+        return LogLevel.ERROR;
+      default:
+        return LogLevel.ERROR;
+    }
   }
 
   setName(_name: string): void {

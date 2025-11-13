@@ -111,10 +111,11 @@ describe('validateItemText', () => {
 
 describe('ValidationError', () => {
   it('カスタムエラークラスとして動作する', () => {
-    const error = new ValidationError('テストエラー');
+    const error = new ValidationError('内部エラーメッセージ', 'ユーザー向けエラーメッセージ');
     expect(error).toBeInstanceOf(Error);
     expect(error).toBeInstanceOf(ValidationError);
-    expect(error.message).toBe('テストエラー');
+    expect(error.message).toBe('内部エラーメッセージ');
+    expect(error.userMessage).toBe('ユーザー向けエラーメッセージ');
     expect(error.name).toBe('ValidationError');
   });
 });

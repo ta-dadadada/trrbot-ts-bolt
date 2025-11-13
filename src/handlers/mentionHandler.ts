@@ -5,6 +5,33 @@ import { getCommand, getCommandRegistration } from '../commands';
 import { handleCommandError } from '../utils/errorHandler';
 
 /**
+ * チャンネルIDからチャンネルタイプを推定
+ * @param channelId チャンネルID
+ * @returns チャンネルタイプ ('channel' | 'im' | 'mpim' | 'group')
+ *
+ * Slack channel ID prefixes:
+ * - C: public channel
+ * - G: private channel (group) or multi-party DM
+ * - D: direct message (DM)
+ */
+function inferChannelType(channelId: string): 'channel' | 'im' | 'mpim' | 'group' {
+  const prefix = channelId.charAt(0);
+  switch (prefix) {
+    case 'C':
+      return 'channel';
+    case 'D':
+      return 'im';
+    case 'G':
+      // G prefix can be either private channel or multi-party DM
+      // Without additional context, we'll assume it's a group
+      return 'group';
+    default:
+      // Fallback to channel for unknown prefixes
+      return 'channel';
+  }
+}
+
+/**
  * コマンド処理を行う関数
  * @param text コマンドテキスト
  * @param event イベントオブジェクト
@@ -78,6 +105,22 @@ export const registerMentionHandlers = (app: App): void => {
     // 最初のメンション（ボット自身へのメンション）だけを削除
     // 例: "<@BOT_ID> command <@USER1> <@USER2>" -> "command <@USER1> <@USER2>"
     const text = event.text.replace(/^<@[A-Z0-9]+>/, '').trim();
-    await processCommand(text, event, say, logger, client);
+
+    // AppMentionEventをSlackEvent（GenericMessageEvent）に変換
+    // AppMentionEventにはchannel_typeプロパティが型定義上存在しないため、
+    // チャンネルIDのプレフィックスから推定する
+    const slackEvent: SlackEvent = {
+      type: 'message',
+      subtype: undefined,
+      user: event.user || '',
+      channel: event.channel,
+      channel_type: inferChannelType(event.channel),
+      event_ts: event.event_ts,
+      ts: event.ts,
+      text: event.text,
+      thread_ts: event.thread_ts,
+    };
+
+    await processCommand(text, slackEvent, say, logger, client);
   });
 };

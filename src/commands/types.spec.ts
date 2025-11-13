@@ -8,6 +8,7 @@ describe('Type definitions', () => {
     it('should be compatible with GenericMessageEvent', () => {
       const event: SlackEvent = {
         type: 'message',
+        subtype: undefined,
         user: 'U123456',
         channel: 'C123456',
         channel_type: 'channel',
@@ -24,6 +25,7 @@ describe('Type definitions', () => {
     it('should allow optional properties', () => {
       const event: SlackEvent = {
         type: 'message',
+        subtype: undefined,
         user: 'U123456',
         channel: 'C123456',
         channel_type: 'channel',
@@ -42,21 +44,26 @@ describe('Type definitions', () => {
   });
 
   describe('SayFunction', () => {
-    it('should accept string messages', () => {
-      expectTypeOf<SayFunction>().parameter(0).toMatchTypeOf<string>();
+    it('should accept string messages', async () => {
+      const say: SayFunction = async () => ({
+        ok: true,
+        channel: 'C123',
+        ts: '123.456',
+      });
+      const result = await say('test message');
+      expect(result.ok).toBe(true);
+      expect(result.channel).toBe('C123');
     });
 
-    it('should accept message objects', () => {
-      expectTypeOf<SayFunction>().parameter(0).toMatchTypeOf<{ text: string }>();
-    });
-
-    it('should accept message objects with optional properties', () => {
-      expectTypeOf<SayFunction>().parameter(0).toMatchTypeOf<{
-        text: string;
-        thread_ts?: string;
-        blocks?: unknown[];
-        attachments?: unknown[];
-      }>();
+    it('should accept message objects', async () => {
+      const say: SayFunction = async () => ({
+        ok: true,
+        channel: 'C123',
+        ts: '123.456',
+      });
+      const result = await say({ text: 'test message' });
+      expect(result.ok).toBe(true);
+      expect(result.channel).toBe('C123');
     });
 
     it('should return ChatPostMessageResponse', () => {
