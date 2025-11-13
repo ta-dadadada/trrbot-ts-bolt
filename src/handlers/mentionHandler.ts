@@ -5,6 +5,33 @@ import { getCommand, getCommandRegistration } from '../commands';
 import { handleCommandError } from '../utils/errorHandler';
 
 /**
+ * チャンネルIDからチャンネルタイプを推定
+ * @param channelId チャンネルID
+ * @returns チャンネルタイプ ('channel' | 'im' | 'mpim' | 'group')
+ *
+ * Slack channel ID prefixes:
+ * - C: public channel
+ * - G: private channel (group) or multi-party DM
+ * - D: direct message (DM)
+ */
+function inferChannelType(channelId: string): 'channel' | 'im' | 'mpim' | 'group' {
+  const prefix = channelId.charAt(0);
+  switch (prefix) {
+    case 'C':
+      return 'channel';
+    case 'D':
+      return 'im';
+    case 'G':
+      // G prefix can be either private channel or multi-party DM
+      // Without additional context, we'll assume it's a group
+      return 'group';
+    default:
+      // Fallback to channel for unknown prefixes
+      return 'channel';
+  }
+}
+
+/**
  * コマンド処理を行う関数
  * @param text コマンドテキスト
  * @param event イベントオブジェクト
@@ -80,12 +107,17 @@ export const registerMentionHandlers = (app: App): void => {
     const text = event.text.replace(/^<@[A-Z0-9]+>/, '').trim();
 
     // AppMentionEventをSlackEvent（GenericMessageEvent）に変換
+    // app_mentionイベントにもchannel_typeが含まれている（実行時に確認済み）
+    // フォールバックとしてチャンネルIDから推定する関数も用意
     const slackEvent: SlackEvent = {
       type: 'message',
       subtype: undefined,
       user: event.user || '',
       channel: event.channel,
-      channel_type: 'channel',
+      channel_type:
+        'channel_type' in event
+          ? (event.channel_type as 'channel' | 'im' | 'mpim' | 'group')
+          : inferChannelType(event.channel),
       event_ts: event.event_ts,
       ts: event.ts,
       text: event.text,

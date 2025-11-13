@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { logger, createLogger } from './logger';
+import { LogLevel } from '@slack/logger';
 
 describe('Pino-based logger', () => {
   let originalLogLevel: string | undefined;
@@ -63,14 +64,14 @@ describe('Pino-based logger', () => {
       process.env.LOG_LEVEL = 'debug';
       const moduleLogger = createLogger('debug-module');
 
-      expect(moduleLogger.getLevel()).toBe('debug');
+      expect(moduleLogger.getLevel()).toBe(LogLevel.DEBUG);
     });
 
     it('should default to info level when LOG_LEVEL not set', () => {
       delete process.env.LOG_LEVEL;
       const moduleLogger = createLogger('default-module');
 
-      expect(moduleLogger.getLevel()).toBe('info');
+      expect(moduleLogger.getLevel()).toBe(LogLevel.INFO);
     });
   });
 
@@ -79,63 +80,63 @@ describe('Pino-based logger', () => {
       process.env.LOG_LEVEL = 'debug';
       const testLogger = createLogger('debug-test');
 
-      expect(testLogger.getLevel()).toBe('debug');
+      expect(testLogger.getLevel()).toBe(LogLevel.DEBUG);
     });
 
     it('should respect DEBUG level (uppercase)', () => {
       process.env.LOG_LEVEL = 'DEBUG';
       const testLogger = createLogger('debug-test-upper');
 
-      expect(testLogger.getLevel()).toBe('debug'); // Pinoは小文字に変換
+      expect(testLogger.getLevel()).toBe(LogLevel.DEBUG);
     });
 
     it('should respect info level', () => {
       process.env.LOG_LEVEL = 'info';
       const testLogger = createLogger('info-test');
 
-      expect(testLogger.getLevel()).toBe('info');
+      expect(testLogger.getLevel()).toBe(LogLevel.INFO);
     });
 
     it('should respect INFO level (uppercase)', () => {
       process.env.LOG_LEVEL = 'INFO';
       const testLogger = createLogger('info-test-upper');
 
-      expect(testLogger.getLevel()).toBe('info');
+      expect(testLogger.getLevel()).toBe(LogLevel.INFO);
     });
 
     it('should respect warn level', () => {
       process.env.LOG_LEVEL = 'warn';
       const testLogger = createLogger('warn-test');
 
-      expect(testLogger.getLevel()).toBe('warn');
+      expect(testLogger.getLevel()).toBe(LogLevel.WARN);
     });
 
     it('should respect WARN level (uppercase)', () => {
       process.env.LOG_LEVEL = 'WARN';
       const testLogger = createLogger('warn-test-upper');
 
-      expect(testLogger.getLevel()).toBe('warn');
+      expect(testLogger.getLevel()).toBe(LogLevel.WARN);
     });
 
     it('should respect error level', () => {
       process.env.LOG_LEVEL = 'error';
       const testLogger = createLogger('error-test');
 
-      expect(testLogger.getLevel()).toBe('error');
+      expect(testLogger.getLevel()).toBe(LogLevel.ERROR);
     });
 
     it('should respect ERROR level (uppercase)', () => {
       process.env.LOG_LEVEL = 'ERROR';
       const testLogger = createLogger('error-test-upper');
 
-      expect(testLogger.getLevel()).toBe('error');
+      expect(testLogger.getLevel()).toBe(LogLevel.ERROR);
     });
 
     it('should handle invalid LOG_LEVEL and default to info', () => {
       process.env.LOG_LEVEL = 'INVALID';
       const testLogger = createLogger('invalid-test');
 
-      expect(testLogger.getLevel()).toBe('info');
+      expect(testLogger.getLevel()).toBe(LogLevel.INFO);
     });
   });
 
