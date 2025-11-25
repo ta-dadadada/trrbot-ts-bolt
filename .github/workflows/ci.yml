@@ -9,6 +9,9 @@ on:
 env:
   HUSKY: 0
 
+permissions:
+  contents: read   # actions/checkout@v6 と actions/cache@v4 に必要
+
 jobs:
   setup:
     runs-on: ubuntu-slim
