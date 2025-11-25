@@ -10,8 +10,7 @@ env:
   HUSKY: 0
 
 permissions:
-  contents: read   # actions/checkout@v6 に必要
-  actions: write   # actions/cache@v4 のキャッシュ保存に必要
+  contents: read   # actions/checkout@v6 と actions/cache@v4 に必要
 
 jobs:
   setup:
