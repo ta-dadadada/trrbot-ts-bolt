@@ -54,7 +54,7 @@ jobs:
 
   test:
     needs: setup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
       - name: Setup Node.js
@@ -77,7 +77,7 @@ jobs:
 
   build:
     needs: [lint, test]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
       - name: Setup Node.js
