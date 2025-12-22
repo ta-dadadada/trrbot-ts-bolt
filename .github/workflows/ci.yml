@@ -10,7 +10,7 @@ env:
   HUSKY: 0
 
 permissions:
-  contents: read   # actions/checkout@v6 と actions/cache@v4 に必要
+  contents: read   # actions/checkout@v6 と actions/cache@v5 に必要
 
 jobs:
   setup:
@@ -26,7 +26,7 @@ jobs:
         run: npm ci
       # キャッシュするnode_modulesを保存
       - name: Cache node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: node-modules-cache
         with:
           path: node_modules
@@ -45,7 +45,7 @@ jobs:
           node-version: '22'
       # キャッシュされたnode_modulesを復元
       - name: Restore node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: node_modules
           key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
@@ -68,7 +68,7 @@ jobs:
           sudo apt-get install -y python3 make g++
       # キャッシュされたnode_modulesを復元
       - name: Restore node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: node_modules
           key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
@@ -86,7 +86,7 @@ jobs:
           node-version: '22'
       # キャッシュされたnode_modulesを復元
       - name: Restore node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: node_modules
           key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
