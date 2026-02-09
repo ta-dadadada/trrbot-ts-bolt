@@ -25,10 +25,10 @@
     "pino": "^10.3.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.4.0",
-    "@commitlint/config-conventional": "^20.4.0",
+    "@commitlint/cli": "^20.4.1",
+    "@commitlint/config-conventional": "^20.4.1",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^22.19.7",
+    "@types/node": "^22.19.10",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
