@@ -22,7 +22,7 @@
     "better-sqlite3": "^12.6.2",
     "csv-stringify": "^6.6.0",
     "dotenv": "^17.3.1",
-    "pino": "^10.3.0"
+    "pino": "^10.3.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.1",
