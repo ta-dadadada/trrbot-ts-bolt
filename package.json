@@ -29,7 +29,7 @@
     "@commitlint/config-conventional": "^20.4.2",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.19.11",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.2",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
