@@ -18,7 +18,7 @@ export default defineConfig({
       fileName: 'index',
     },
     // 依存関係を外部化
-    rollupOptions: {
+    rolldownOptions: {
       external: [
         '@slack/bolt',
         'dotenv',
