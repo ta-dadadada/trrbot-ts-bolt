@@ -1,19 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DiceCommand } from './diceCommand';
+import { ShuffleCommand } from './shuffleCommand';
 import { SayFunction, SlackEvent } from './types';
 import { Logger } from '@slack/bolt';
 import { WebClient } from '@slack/web-api';
 import * as randomUtils from '../utils/random';
+import { BOT_MENTION_NAME } from '../config/constants';
 
-describe('DiceCommand', () => {
-  let command: DiceCommand;
+describe('ShuffleCommand', () => {
+  let command: ShuffleCommand;
   let mockSay: SayFunction;
   let mockLogger: Logger;
   let mockEvent: SlackEvent;
   let mockClient: WebClient;
 
   beforeEach(() => {
-    command = new DiceCommand();
+    command = new ShuffleCommand();
     mockSay = vi.fn().mockResolvedValue({
       ok: true,
       channel: 'C123456',
@@ -35,28 +36,58 @@ describe('DiceCommand', () => {
       channel_type: 'channel',
       event_ts: '1234567890.123456',
       ts: '1234567890.123456',
-      text: 'dice',
+      text: 'shuffle',
     } as SlackEvent;
     mockClient = {} as WebClient;
 
-    // getRandomIntのモック
-    vi.spyOn(randomUtils, 'getRandomInt').mockImplementation((_min, _max) => {
-      // テスト用に固定値を返す
-      return 4;
-    });
+    vi.spyOn(randomUtils, 'shuffleArray').mockImplementation((arr) => [...arr].reverse());
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('should have correct properties', () => {
+  it('コマンドのプロパティが正しいこと', () => {
     expect(command.description).toBeDefined();
     expect(command.getExamples).toBeDefined();
-    expect(command.getExamples('dice')).toHaveLength(4);
+    expect(command.getExamples('shuffle')).toHaveLength(2);
   });
 
-  it('should return a random number between 1 and 6 when no arguments are provided', async () => {
+  it('引数をシャッフルして順序付き表示すること', async () => {
+    await command.execute({
+      event: mockEvent,
+      say: mockSay,
+      logger: mockLogger,
+      args: ['A', 'B', 'C', 'D'],
+      client: mockClient,
+    });
+
+    expect(randomUtils.shuffleArray).toHaveBeenCalledWith(['A', 'B', 'C', 'D']);
+    expect(mockSay).toHaveBeenCalledWith({
+      text: 'シャッフル結果:\n1. D\n2. C\n3. B\n4. A',
+      thread_ts: '1234567890.123456',
+    });
+  });
+
+  it('引数が1つ以下の場合にエラーメッセージを表示すること', async () => {
+    await command.execute({
+      event: mockEvent,
+      say: mockSay,
+      logger: mockLogger,
+      args: ['A'],
+      client: mockClient,
+    });
+
+    const expectedText = `並び替える項目を2つ以上指定してください。\n例: \`${BOT_MENTION_NAME} shuffle A B C D\``;
+
+    expect(randomUtils.shuffleArray).not.toHaveBeenCalled();
+    expect(mockSay).toHaveBeenCalledWith({
+      text: expectedText,
+      thread_ts: '1234567890.123456',
+    });
+  });
+
+  it('引数がない場合にエラーメッセージを表示すること', async () => {
     await command.execute({
       event: mockEvent,
       say: mockSay,
@@ -65,62 +96,16 @@ describe('DiceCommand', () => {
       client: mockClient,
     });
 
-    expect(randomUtils.getRandomInt).toHaveBeenCalledWith(1, 6);
+    const expectedText = `並び替える項目を2つ以上指定してください。\n例: \`${BOT_MENTION_NAME} shuffle A B C D\``;
+
+    expect(randomUtils.shuffleArray).not.toHaveBeenCalled();
     expect(mockSay).toHaveBeenCalledWith({
-      text: '🎲 結果: *4*',
+      text: expectedText,
       thread_ts: '1234567890.123456',
     });
   });
 
-  it('should return a random number between 1 and the specified number', async () => {
-    await command.execute({
-      event: mockEvent,
-      say: mockSay,
-      logger: mockLogger,
-      args: ['10'],
-      client: mockClient,
-    });
-
-    expect(randomUtils.getRandomInt).toHaveBeenCalledWith(1, 10);
-    expect(mockSay).toHaveBeenCalledWith({
-      text: '🎲 結果: *4*',
-      thread_ts: '1234567890.123456',
-    });
-  });
-
-  it('should handle invalid input', async () => {
-    await command.execute({
-      event: mockEvent,
-      say: mockSay,
-      logger: mockLogger,
-      args: ['invalid'],
-      client: mockClient,
-    });
-
-    expect(randomUtils.getRandomInt).not.toHaveBeenCalled();
-    expect(mockSay).toHaveBeenCalledWith({
-      text: '有効な正の整数を指定してください。',
-      thread_ts: '1234567890.123456',
-    });
-  });
-
-  it('should handle negative numbers', async () => {
-    await command.execute({
-      event: mockEvent,
-      say: mockSay,
-      logger: mockLogger,
-      args: ['-5'],
-      client: mockClient,
-    });
-
-    expect(randomUtils.getRandomInt).not.toHaveBeenCalled();
-    expect(mockSay).toHaveBeenCalledWith({
-      text: '有効な正の整数を指定してください。',
-      thread_ts: '1234567890.123456',
-    });
-  });
-
-  it('should handle thread replies', async () => {
+  it('スレッド内での返信が正しく動作すること', async () => {
     const threadEvent = {
       ...mockEvent,
       thread_ts: '123456789.123456',
@@ -130,12 +115,12 @@ describe('DiceCommand', () => {
       event: threadEvent,
       say: mockSay,
       logger: mockLogger,
-      args: [],
+      args: ['A', 'B', 'C'],
       client: mockClient,
     });
 
     expect(mockSay).toHaveBeenCalledWith({
-      text: '🎲 結果: *4*',
+      text: 'シャッフル結果:\n1. C\n2. B\n3. A',
       thread_ts: '123456789.123456',
     });
   });

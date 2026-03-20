@@ -1,6 +1,7 @@
 import { App, Logger, AllMiddlewareArgs } from '@slack/bolt';
 import { parseCommand } from '../utils/random';
-import { CommandContext, SlackEvent, SayFunction, getThreadTs } from '../commands/types';
+import { CommandContext, SlackEvent, SayFunction } from '../commands/types';
+import { getReplyOptions } from '../commands/utils';
 import { getCommand, getCommandRegistration } from '../commands';
 import { handleCommandError } from '../utils/errorHandler';
 
@@ -45,7 +46,7 @@ export const processCommand = async (
   logger: Logger,
   client: AllMiddlewareArgs['client'],
 ): Promise<void> => {
-  const threadTs = getThreadTs(event);
+  const replyOptions = getReplyOptions(event);
 
   // コマンドコンテキストを作成（エラーハンドリングで使用）
   const context: CommandContext = {
@@ -62,7 +63,7 @@ export const processCommand = async (
     if (args.length === 0) {
       await say({
         text: '何かコマンドを指定してください。',
-        ...(threadTs && { thread_ts: threadTs }),
+        ...replyOptions,
       });
       return;
     }
@@ -79,7 +80,7 @@ export const processCommand = async (
       if (!isDM) {
         await say({
           text: 'このコマンドはDM専用です。DMで実行してください。',
-          ...(threadTs && { thread_ts: threadTs }),
+          ...replyOptions,
         });
         return;
       }

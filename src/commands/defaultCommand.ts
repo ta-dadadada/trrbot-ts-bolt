@@ -1,4 +1,5 @@
-import { Command, CommandContext, getThreadTs } from './types';
+import { Command, CommandContext } from './types';
+import { getReplyOptions } from './utils';
 import { getRandomItem } from '../utils/random';
 import { BOT_MENTION_NAME } from '../config/constants';
 
@@ -15,7 +16,7 @@ export class DefaultCommand implements Command {
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say } = context;
-    const threadTs = getThreadTs(event);
+    const replyOptions = getReplyOptions(event);
 
     // コマンドテキスト全体を取得
     const fullText = context.args.join(' ');
@@ -27,12 +28,12 @@ export class DefaultCommand implements Command {
       const choice = getRandomItem(choices);
       await say({
         text: `選ばれたのは: *${choice}*`,
-        ...(threadTs && { thread_ts: threadTs }),
+        ...replyOptions,
       });
     } else {
       await say({
         text: `'help'コマンドでヘルプを表示できます。`,
-        ...(threadTs && { thread_ts: threadTs }),
+        ...replyOptions,
       });
     }
   }

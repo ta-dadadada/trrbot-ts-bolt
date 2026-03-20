@@ -1,19 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DiceCommand } from './diceCommand';
+import { SecretCommand } from './secretCommand';
 import { SayFunction, SlackEvent } from './types';
 import { Logger } from '@slack/bolt';
 import { WebClient } from '@slack/web-api';
 import * as randomUtils from '../utils/random';
 
-describe('DiceCommand', () => {
-  let command: DiceCommand;
+describe('SecretCommand', () => {
+  let command: SecretCommand;
   let mockSay: SayFunction;
   let mockLogger: Logger;
   let mockEvent: SlackEvent;
   let mockClient: WebClient;
 
   beforeEach(() => {
-    command = new DiceCommand();
+    command = new SecretCommand();
     mockSay = vi.fn().mockResolvedValue({
       ok: true,
       channel: 'C123456',
@@ -35,28 +35,24 @@ describe('DiceCommand', () => {
       channel_type: 'channel',
       event_ts: '1234567890.123456',
       ts: '1234567890.123456',
-      text: 'dice',
+      text: 'secret',
     } as SlackEvent;
     mockClient = {} as WebClient;
 
-    // getRandomIntのモック
-    vi.spyOn(randomUtils, 'getRandomInt').mockImplementation((_min, _max) => {
-      // テスト用に固定値を返す
-      return 4;
-    });
+    vi.spyOn(randomUtils, 'getRandomStringWithSymbols').mockReturnValue('Ab1@Cd2#Ef');
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('should have correct properties', () => {
+  it('コマンドのプロパティが正しいこと', () => {
     expect(command.description).toBeDefined();
     expect(command.getExamples).toBeDefined();
-    expect(command.getExamples('dice')).toHaveLength(4);
+    expect(command.getExamples('secret')).toHaveLength(2);
   });
 
-  it('should return a random number between 1 and 6 when no arguments are provided', async () => {
+  it('デフォルトで10文字の文字列を生成すること', async () => {
     await command.execute({
       event: mockEvent,
       say: mockSay,
@@ -65,30 +61,38 @@ describe('DiceCommand', () => {
       client: mockClient,
     });
 
-    expect(randomUtils.getRandomInt).toHaveBeenCalledWith(1, 6);
+    expect(randomUtils.getRandomStringWithSymbols).toHaveBeenCalledWith(10);
     expect(mockSay).toHaveBeenCalledWith({
-      text: '🎲 結果: *4*',
+      text: '🔐 生成されたシークレット文字列（記号含む）: `Ab1@Cd2#Ef`',
       thread_ts: '1234567890.123456',
     });
   });
 
-  it('should return a random number between 1 and the specified number', async () => {
+  it('指定された長さで文字列を生成すること', async () => {
     await command.execute({
       event: mockEvent,
       say: mockSay,
       logger: mockLogger,
-      args: ['10'],
+      args: ['20'],
       client: mockClient,
     });
 
-    expect(randomUtils.getRandomInt).toHaveBeenCalledWith(1, 10);
-    expect(mockSay).toHaveBeenCalledWith({
-      text: '🎲 結果: *4*',
-      thread_ts: '1234567890.123456',
-    });
+    expect(randomUtils.getRandomStringWithSymbols).toHaveBeenCalledWith(20);
   });
 
-  it('should handle invalid input', async () => {
+  it('100を超える長さは100にクランプされること', async () => {
+    await command.execute({
+      event: mockEvent,
+      say: mockSay,
+      logger: mockLogger,
+      args: ['200'],
+      client: mockClient,
+    });
+
+    expect(randomUtils.getRandomStringWithSymbols).toHaveBeenCalledWith(100);
+  });
+
+  it('無効な入力の場合にエラーメッセージを表示すること', async () => {
     await command.execute({
       event: mockEvent,
       say: mockSay,
@@ -97,14 +101,14 @@ describe('DiceCommand', () => {
       client: mockClient,
     });
 
-    expect(randomUtils.getRandomInt).not.toHaveBeenCalled();
+    expect(randomUtils.getRandomStringWithSymbols).not.toHaveBeenCalled();
     expect(mockSay).toHaveBeenCalledWith({
       text: '有効な正の整数を指定してください。',
       thread_ts: '1234567890.123456',
     });
   });
 
-  it('should handle negative numbers', async () => {
+  it('負数の場合にエラーメッセージを表示すること', async () => {
     await command.execute({
       event: mockEvent,
       say: mockSay,
@@ -113,14 +117,34 @@ describe('DiceCommand', () => {
       client: mockClient,
     });
 
-    expect(randomUtils.getRandomInt).not.toHaveBeenCalled();
+    expect(randomUtils.getRandomStringWithSymbols).not.toHaveBeenCalled();
     expect(mockSay).toHaveBeenCalledWith({
       text: '有効な正の整数を指定してください。',
       thread_ts: '1234567890.123456',
     });
   });
 
-  it('should handle thread replies', async () => {
+  it('生成エラーの場合にエラーメッセージを表示すること', async () => {
+    vi.mocked(randomUtils.getRandomStringWithSymbols).mockImplementation(() => {
+      throw new Error('generation error');
+    });
+
+    await command.execute({
+      event: mockEvent,
+      say: mockSay,
+      logger: mockLogger,
+      args: [],
+      client: mockClient,
+    });
+
+    expect(mockLogger.error).toHaveBeenCalled();
+    expect(mockSay).toHaveBeenCalledWith({
+      text: 'ランダム文字列の生成中にエラーが発生しました。',
+      thread_ts: '1234567890.123456',
+    });
+  });
+
+  it('スレッド内での返信が正しく動作すること', async () => {
     const threadEvent = {
       ...mockEvent,
       thread_ts: '123456789.123456',
@@ -135,7 +159,7 @@ describe('DiceCommand', () => {
     });
 
     expect(mockSay).toHaveBeenCalledWith({
-      text: '🎲 結果: *4*',
+      text: '🔐 生成されたシークレット文字列（記号含む）: `Ab1@Cd2#Ef`',
       thread_ts: '123456789.123456',
     });
   });

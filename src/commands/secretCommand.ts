@@ -1,4 +1,5 @@
-import { Command, CommandContext, getThreadTs } from './types';
+import { Command, CommandContext } from './types';
+import { getReplyOptions } from './utils';
 import { getRandomStringWithSymbols } from '../utils/random';
 import { BOT_MENTION_NAME } from '../config/constants';
 
@@ -14,7 +15,7 @@ export class SecretCommand implements Command {
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args, logger } = context;
-    const threadTs = getThreadTs(event);
+    const replyOptions = getReplyOptions(event);
 
     // デフォルトは10文字
     let length = 10;
@@ -26,7 +27,7 @@ export class SecretCommand implements Command {
       if (isNaN(lengthArg) || lengthArg < 1) {
         await say({
           text: '有効な正の整数を指定してください。',
-          ...(threadTs && { thread_ts: threadTs }),
+          ...replyOptions,
         });
         return;
       }
@@ -40,13 +41,13 @@ export class SecretCommand implements Command {
 
       await say({
         text: `🔐 生成されたシークレット文字列（記号含む）: \`${result}\``,
-        ...(threadTs && { thread_ts: threadTs }),
+        ...replyOptions,
       });
     } catch (error) {
       logger.error('ランダム文字列生成コマンドの実行中にエラーが発生しました', error);
       await say({
         text: 'ランダム文字列の生成中にエラーが発生しました。',
-        ...(threadTs && { thread_ts: threadTs }),
+        ...replyOptions,
       });
     }
   }

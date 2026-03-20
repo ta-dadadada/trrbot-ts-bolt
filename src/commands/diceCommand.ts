@@ -1,4 +1,5 @@
-import { Command, CommandContext, getThreadTs } from './types';
+import { Command, CommandContext } from './types';
+import { getReplyOptions } from './utils';
 import { getRandomInt } from '../utils/random';
 import { BOT_MENTION_NAME } from '../config/constants';
 import { handleCommandError, logCommandSuccess, logDebug } from '../utils/errorHandler';
@@ -63,7 +64,7 @@ export class DiceCommand implements Command {
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args, logger } = context;
-    const threadTs = getThreadTs(event);
+    const replyOptions = getReplyOptions(event);
 
     try {
       logDebug(logger, 'dice', 'Parsing dice command', { args });
@@ -80,7 +81,7 @@ export class DiceCommand implements Command {
 
         await say({
           text: `🎲 ${diceCount}d${diceFaces} の結果: ${results.join(', ')} = *${total}*`,
-          ...(threadTs && { thread_ts: threadTs }),
+          ...replyOptions,
         });
 
         logCommandSuccess(logger, 'dice', {
@@ -102,7 +103,7 @@ export class DiceCommand implements Command {
 
           await say({
             text: `🎲 ${diceCount}d${diceFaces} の結果: ${results.join(', ')} = *${total}*`,
-            ...(threadTs && { thread_ts: threadTs }),
+            ...replyOptions,
           });
 
           logCommandSuccess(logger, 'dice', {
@@ -138,7 +139,7 @@ export class DiceCommand implements Command {
 
       await say({
         text: `🎲 結果: *${result}*`,
-        ...(threadTs && { thread_ts: threadTs }),
+        ...replyOptions,
       });
 
       logCommandSuccess(logger, 'dice', {

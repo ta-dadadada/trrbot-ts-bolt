@@ -1,7 +1,8 @@
-import { Command, CommandContext, getThreadTs } from './types';
-import { GroupService } from '../services/groupService';
-import { shuffleArray } from '../utils/random';
-import { BOT_MENTION_NAME } from '../config/constants';
+import { Command, CommandContext } from '../types';
+import { getReplyOptions } from '../utils';
+import type { IGroupService } from '../../features/group';
+import { shuffleArray } from '../../utils/random';
+import { BOT_MENTION_NAME } from '../../config/constants';
 
 /**
  * グループ内のアイテムをランダムに並び替えるコマンドの実装
@@ -9,19 +10,21 @@ import { BOT_MENTION_NAME } from '../config/constants';
 export class GroupShuffleCommand implements Command {
   description = '指定されたグループ内のアイテムをランダムに並び替えて順序付けて返します';
 
+  constructor(private readonly groupService: IGroupService) {}
+
   getExamples(commandName: string): string[] {
     return [`${BOT_MENTION_NAME} ${commandName} グループ名`];
   }
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args } = context;
-    const threadTs = getThreadTs(event);
+    const replyOptions = getReplyOptions(event);
 
     // グループ名が指定されていない場合はエラーメッセージを表示
     if (args.length === 0) {
       await say({
         text: `グループ名を指定してください。`,
-        ...(threadTs && { thread_ts: threadTs }),
+        ...replyOptions,
       });
       return;
     }
@@ -29,13 +32,13 @@ export class GroupShuffleCommand implements Command {
     const groupName = args[0];
 
     // グループからアイテムを取得
-    const items = GroupService.getItemsByGroupName(groupName);
+    const items = this.groupService.getItemsByGroupName(groupName);
 
     // アイテムが存在しない場合はエラーメッセージを表示
     if (items.length === 0) {
       await say({
         text: `グループ "${groupName}" は存在しないか、アイテムがありません。`,
-        ...(threadTs && { thread_ts: threadTs }),
+        ...replyOptions,
       });
       return;
     }
@@ -44,7 +47,7 @@ export class GroupShuffleCommand implements Command {
     if (items.length === 1) {
       await say({
         text: `グループ "${groupName}" にはアイテムが1つしかありません: *${items[0].itemText}*`,
-        ...(threadTs && { thread_ts: threadTs }),
+        ...replyOptions,
       });
       return;
     }
@@ -60,7 +63,7 @@ export class GroupShuffleCommand implements Command {
 
     await say({
       text: `グループ "${groupName}" のシャッフル結果:\n${resultText}`,
-      ...(threadTs && { thread_ts: threadTs }),
+      ...replyOptions,
     });
   }
 }
