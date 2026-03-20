@@ -70,9 +70,9 @@ describe('GroupShuffleCommand', () => {
 
   it('グループアイテムをシャッフルして順序付き表示すること', async () => {
     vi.mocked(mockGroupService.getItemsByGroupName).mockReturnValue([
-      { id: 1, groupId: 1, itemText: 'A' },
-      { id: 2, groupId: 1, itemText: 'B' },
-      { id: 3, groupId: 1, itemText: 'C' },
+      { id: 1, groupId: 1, itemText: 'A', createdAt: '2025-01-01' },
+      { id: 2, groupId: 1, itemText: 'B', createdAt: '2025-01-01' },
+      { id: 3, groupId: 1, itemText: 'C', createdAt: '2025-01-01' },
     ]);
 
     await command.execute({
@@ -126,7 +126,7 @@ describe('GroupShuffleCommand', () => {
 
   it('アイテムが1つの場合に特別メッセージを表示すること', async () => {
     vi.mocked(mockGroupService.getItemsByGroupName).mockReturnValue([
-      { id: 1, groupId: 1, itemText: '唯一のアイテム' },
+      { id: 1, groupId: 1, itemText: '唯一のアイテム', createdAt: '2025-01-01' },
     ]);
 
     await command.execute({
@@ -151,8 +151,8 @@ describe('GroupShuffleCommand', () => {
     };
 
     vi.mocked(mockGroupService.getItemsByGroupName).mockReturnValue([
-      { id: 1, groupId: 1, itemText: 'A' },
-      { id: 2, groupId: 1, itemText: 'B' },
+      { id: 1, groupId: 1, itemText: 'A', createdAt: '2025-01-01' },
+      { id: 2, groupId: 1, itemText: 'B', createdAt: '2025-01-01' },
     ]);
 
     await command.execute({
