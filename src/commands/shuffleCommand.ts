@@ -1,4 +1,5 @@
-import { Command, CommandContext, getThreadTs } from './types';
+import { Command, CommandContext } from './types';
+import { getReplyOptions } from './utils';
 import { shuffleArray } from '../utils/random';
 import { BOT_MENTION_NAME } from '../config/constants';
 
@@ -17,13 +18,13 @@ export class ShuffleCommand implements Command {
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args } = context;
-    const threadTs = getThreadTs(event);
+    const replyOptions = getReplyOptions(event);
 
     // 引数が2つ未満の場合はエラーメッセージを表示
     if (args.length < 2) {
       await say({
         text: `並び替える項目を2つ以上指定してください。\n例: \`${BOT_MENTION_NAME} shuffle A B C D\``,
-        ...(threadTs && { thread_ts: threadTs }),
+        ...replyOptions,
       });
       return;
     }
@@ -36,7 +37,7 @@ export class ShuffleCommand implements Command {
 
     await say({
       text: `シャッフル結果:\n${resultText}`,
-      ...(threadTs && { thread_ts: threadTs }),
+      ...replyOptions,
     });
   }
 }

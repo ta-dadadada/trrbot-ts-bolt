@@ -1,4 +1,5 @@
-import { Command, CommandContext, getThreadTs } from './types';
+import { Command, CommandContext } from './types';
+import { getReplyOptions } from './utils';
 import type { CommandRegistration } from './index';
 import { BOT_MENTION_NAME } from '../config/constants';
 
@@ -25,7 +26,7 @@ export class HelpCommand implements Command {
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say } = context;
-    const threadTs = getThreadTs(event);
+    const replyOptions = getReplyOptions(event);
 
     // ヘルプテキストのヘッダー
     let helpText = `\n*使用可能なコマンド:*\n`;
@@ -73,7 +74,7 @@ export class HelpCommand implements Command {
 
     await say({
       text: helpText,
-      ...(threadTs && { thread_ts: threadTs }),
+      ...replyOptions,
     });
   }
 }

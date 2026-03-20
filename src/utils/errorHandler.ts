@@ -1,5 +1,6 @@
 import type { Logger } from '@slack/logger';
-import { CommandContext, getThreadTs } from '../commands/types';
+import { CommandContext } from '../commands/types';
+import { getReplyOptions } from '../commands/utils';
 import { BotError } from './errors';
 
 /**
@@ -50,7 +51,7 @@ export async function handleCommandError(
   commandName?: string,
 ): Promise<void> {
   const { logger, say, event } = context;
-  const threadTs = getThreadTs(event);
+  const replyOptions = getReplyOptions(event);
 
   if (commandName) {
     logger.setName(`cmd:${commandName}`);
@@ -88,7 +89,7 @@ export async function handleCommandError(
   try {
     await say({
       text: userMessage,
-      ...(threadTs && { thread_ts: threadTs }),
+      ...replyOptions,
     });
   } catch (sayError) {
     logger.error({

@@ -3,14 +3,26 @@ import { initializeDatabase, closeDatabase } from './utils/database';
 import { registerMessageHandlers } from './handlers/messageHandler';
 import { registerMentionHandlers } from './handlers/mentionHandler';
 import { createLogger } from './utils/logger';
+import { createDatabase, initializeContainer, resolveReactionService } from './container';
+import { initializeCommands } from './commands';
 
 const logger = createLogger('app');
 
-// データベースの初期化
+// データベースの作成とDIコンテナの初期化
+const db = createDatabase();
+initializeContainer(db);
+
+// データベースの初期化（テーブル作成）
 initializeDatabase();
 
+// コマンドの初期化（DIコンテナ初期化後に呼び出す）
+initializeCommands();
+
+// サービスを解決
+const reactionService = resolveReactionService();
+
 // メッセージハンドラの登録
-registerMessageHandlers(app);
+registerMessageHandlers(app, reactionService);
 
 // メンションハンドラの登録
 registerMentionHandlers(app);

@@ -67,14 +67,3 @@ export interface Command {
    */
   getHelpText?(commandName: string): string;
 }
-
-/**
- * スレッド内で返信するためのヘルパー関数
- * スレッド内のメッセージの場合は thread_ts を返す
- * 通常のメッセージの場合は undefined を返す（チャンネルに直接返信）
- * @param event Slackイベント
- * @returns スレッドTS（存在する場合）
- */
-export const getThreadTs = (event: SlackEvent): string | undefined => {
-  return event.thread_ts;
-};

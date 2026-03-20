@@ -1,4 +1,5 @@
-import { Command, CommandContext, getThreadTs } from './types';
+import { Command, CommandContext } from './types';
+import { getReplyOptions } from './utils';
 import { getRandomItem } from '../utils/random';
 import { BOT_MENTION_NAME } from '../config/constants';
 import { handleCommandError, logCommandSuccess } from '../utils/errorHandler';
@@ -16,7 +17,7 @@ export class ChoiceCommand implements Command {
 
   async execute(context: CommandContext): Promise<void> {
     const { event, say, args, logger } = context;
-    const threadTs = getThreadTs(event);
+    const replyOptions = getReplyOptions(event);
 
     try {
       if (args.length === 0) {
@@ -29,7 +30,7 @@ export class ChoiceCommand implements Command {
 
       await say({
         text: `選ばれたのは: *${choice}*`,
-        ...(threadTs && { thread_ts: threadTs }),
+        ...replyOptions,
       });
 
       logCommandSuccess(logger, 'choice', {
