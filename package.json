@@ -18,7 +18,7 @@
   "license": "MIT",
   "description": "Slack Bolt アプリケーション（TypeScript）",
   "dependencies": {
-    "@slack/bolt": "^4.6.0",
+    "@slack/bolt": "^4.7.1",
     "better-sqlite3": "^12.9.0",
     "csv-stringify": "^6.7.0",
     "dotenv": "^17.4.2",
