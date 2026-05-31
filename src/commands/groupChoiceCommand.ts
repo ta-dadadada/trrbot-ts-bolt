@@ -30,13 +30,12 @@ export class GroupChoiceCommand implements Command {
     // 引数から '-' の位置を探す
     const excludeIndex = args.indexOf('-');
     let groupName: string;
-    let excludeItems: string[] = [];
     let item: string | undefined;
 
     if (excludeIndex !== -1 && excludeIndex < args.length - 1) {
       // '-' がある場合、その前をグループ名、後ろを除外アイテムとして扱う
       groupName = args.slice(0, excludeIndex).join(' ');
-      excludeItems = args.slice(excludeIndex + 1);
+      const excludeItems = args.slice(excludeIndex + 1);
       item = GroupService.getRandomItemFromGroupExcluding(groupName, excludeItems);
     } else {
       // '-' がない場合は従来通りの処理
