@@ -65,7 +65,7 @@ export async function handleCommandError(
   };
 
   let userMessage = 'エラーが発生しました。';
-  let logMessage = 'Unknown error occurred';
+  let logMessage: string;
   let severity: 'error' | 'warn' = 'error';
 
   if (error instanceof BotError) {
