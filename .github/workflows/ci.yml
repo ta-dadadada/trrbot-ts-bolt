@@ -10,13 +10,13 @@ env:
   HUSKY: 0
 
 permissions:
-  contents: read   # actions/checkout@v6 と actions/cache@v5 に必要
+  contents: read   # actions/checkout@v7 と actions/cache@v6 に必要
 
 jobs:
   setup:
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -26,7 +26,7 @@ jobs:
         run: npm ci
       # キャッシュするnode_modulesを保存
       - name: Cache node_modules
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         id: node-modules-cache
         with:
           path: node_modules
@@ -38,14 +38,14 @@ jobs:
     needs: setup
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '24'
       # キャッシュされたnode_modulesを復元
       - name: Restore node_modules
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: node_modules
           key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
@@ -56,7 +56,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -68,7 +68,7 @@ jobs:
           sudo apt-get install -y python3 make g++
       # キャッシュされたnode_modulesを復元
       - name: Restore node_modules
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: node_modules
           key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
@@ -79,14 +79,14 @@ jobs:
     needs: [lint, test]
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '24'
       # キャッシュされたnode_modulesを復元
       - name: Restore node_modules
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: node_modules
           key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
