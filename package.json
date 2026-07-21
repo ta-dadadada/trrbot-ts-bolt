@@ -21,7 +21,7 @@
     "node": ">=24 <25"
   },
   "dependencies": {
-    "@slack/bolt": "^4.7.3",
+    "@slack/bolt": "^5.0.0",
     "better-sqlite3": "^12.11.1",
     "csv-stringify": "^6.8.1",
     "dotenv": "^17.4.2",
