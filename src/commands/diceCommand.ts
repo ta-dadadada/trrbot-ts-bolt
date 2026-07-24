@@ -1,7 +1,7 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { getRandomInt } from '../utils/random';
 import { BOT_MENTION_NAME } from '../config/constants';
-import { handleCommandError, logCommandSuccess, logDebug } from '../utils/errorHandler';
+import { logDebug } from '../utils/errorHandler';
 import { ValidationError } from '../utils/errors';
 
 /**
@@ -62,20 +62,30 @@ export class DiceCommand implements Command {
   }
 
   async execute(context: CommandContext): Promise<void> {
-    const { event, say, args, logger } = context;
+    const { event, say, args, invokedName, logger } = context;
     const threadTs = getThreadTs(event);
 
-    try {
-      logDebug(logger, 'dice', 'Parsing dice command', { args });
+    logDebug(logger, 'dice', 'Parsing dice command', { args });
 
-      // コマンド名自体がダイスコード形式かチェック
-      // event.textが存在し、かつコマンド名（最初の単語）がダイスコード形式かチェック
-      const commandName = event.text?.trim().split(/\s+/)[0] || '';
-      const commandNameDiceCode = this.parseDiceCode(commandName);
+    const commandNameDiceCode = this.parseDiceCode(invokedName);
 
-      if (commandNameDiceCode) {
-        // コマンド名がダイスコード形式の場合（例: BOT_MENTION_NAME 2d6）
-        const [diceCount, diceFaces] = commandNameDiceCode;
+    if (commandNameDiceCode) {
+      const [diceCount, diceFaces] = commandNameDiceCode;
+      const { results, total } = this.rollMultipleDice(diceCount, diceFaces);
+
+      await say({
+        text: `🎲 ${diceCount}d${diceFaces} の結果: ${results.join(', ')} = *${total}*`,
+        ...(threadTs && { thread_ts: threadTs }),
+      });
+
+      return;
+    }
+
+    if (args.length > 0) {
+      const argDiceCode = this.parseDiceCode(args[0]);
+
+      if (argDiceCode) {
+        const [diceCount, diceFaces] = argDiceCode;
         const { results, total } = this.rollMultipleDice(diceCount, diceFaces);
 
         await say({
@@ -83,71 +93,32 @@ export class DiceCommand implements Command {
           ...(threadTs && { thread_ts: threadTs }),
         });
 
-        logCommandSuccess(logger, 'dice', {
-          user: event.user,
-          diceNotation: `${diceCount}d${diceFaces}`,
-          result: total,
-        });
         return;
       }
-
-      // 引数がダイスコード形式かチェック
-      if (args.length > 0) {
-        const argDiceCode = this.parseDiceCode(args[0]);
-
-        if (argDiceCode) {
-          // 引数がダイスコード形式の場合（例: BOT_MENTION_NAME dice 2d6）
-          const [diceCount, diceFaces] = argDiceCode;
-          const { results, total } = this.rollMultipleDice(diceCount, diceFaces);
-
-          await say({
-            text: `🎲 ${diceCount}d${diceFaces} の結果: ${results.join(', ')} = *${total}*`,
-            ...(threadTs && { thread_ts: threadTs }),
-          });
-
-          logCommandSuccess(logger, 'dice', {
-            user: event.user,
-            diceNotation: `${diceCount}d${diceFaces}`,
-            result: total,
-          });
-          return;
-        }
-      }
-
-      // 通常のダイスコマンド処理
-      // デフォルトは1〜6の範囲
-      const min = 1;
-      let max = 6;
-
-      // 引数がある場合は、1〜指定された数字の範囲
-      if (args.length > 0) {
-        const maxArg = parseInt(args[0], 10);
-
-        if (isNaN(maxArg) || maxArg < 1) {
-          throw new ValidationError(
-            `Invalid max value: ${args[0]}`,
-            '有効な正の整数を指定してください。',
-            { providedValue: args[0] },
-          );
-        }
-
-        max = maxArg;
-      }
-
-      const result = getRandomInt(min, max);
-
-      await say({
-        text: `🎲 結果: *${result}*`,
-        ...(threadTs && { thread_ts: threadTs }),
-      });
-
-      logCommandSuccess(logger, 'dice', {
-        user: event.user,
-        max,
-        result,
-      });
-    } catch (error) {
-      await handleCommandError(error, context, 'dice');
     }
+
+    const min = 1;
+    let max = 6;
+
+    if (args.length > 0) {
+      const maxArg = parseInt(args[0], 10);
+
+      if (isNaN(maxArg) || maxArg < 1) {
+        throw new ValidationError(
+          `Invalid max value: ${args[0]}`,
+          '有効な正の整数を指定してください。',
+          { providedValue: args[0] },
+        );
+      }
+
+      max = maxArg;
+    }
+
+    const result = getRandomInt(min, max);
+
+    await say({
+      text: `🎲 結果: *${result}*`,
+      ...(threadTs && { thread_ts: threadTs }),
+    });
   }
 }

@@ -72,12 +72,33 @@ describe('DiceCommand', () => {
     });
   });
 
+  it('解析済みの呼び出し名がダイス記法の場合は複数ダイスを処理する', async () => {
+    await command.execute({
+      event: {
+        ...mockEvent,
+        text: '<@UBOT> 2d6',
+      },
+      say: mockSay,
+      logger: mockLogger,
+      args: [],
+      invokedName: '2d6',
+      client: mockClient,
+    });
+
+    expect(randomUtils.getRandomInt).toHaveBeenCalledTimes(2);
+    expect(randomUtils.getRandomInt).toHaveBeenCalledWith(1, 6);
+    expect(mockSay).toHaveBeenCalledWith({
+      text: '🎲 2d6 の結果: 4, 4 = *8*',
+    });
+  });
+
   it('should return a random number between 1 and the specified number', async () => {
     await command.execute({
       event: mockEvent,
       say: mockSay,
       logger: mockLogger,
       args: ['10'],
+      invokedName: 'dice',
       client: mockClient,
     });
 
@@ -88,33 +109,39 @@ describe('DiceCommand', () => {
   });
 
   it('should handle invalid input', async () => {
-    await command.execute({
-      event: mockEvent,
-      say: mockSay,
-      logger: mockLogger,
-      args: ['invalid'],
-      client: mockClient,
+    await expect(
+      command.execute({
+        event: mockEvent,
+        say: mockSay,
+        logger: mockLogger,
+        args: ['invalid'],
+        invokedName: 'dice',
+        client: mockClient,
+      }),
+    ).rejects.toMatchObject({
+      userMessage: '有効な正の整数を指定してください。',
     });
 
     expect(randomUtils.getRandomInt).not.toHaveBeenCalled();
-    expect(mockSay).toHaveBeenCalledWith({
-      text: '有効な正の整数を指定してください。',
-    });
+    expect(mockSay).not.toHaveBeenCalled();
   });
 
   it('should handle negative numbers', async () => {
-    await command.execute({
-      event: mockEvent,
-      say: mockSay,
-      logger: mockLogger,
-      args: ['-5'],
-      client: mockClient,
+    await expect(
+      command.execute({
+        event: mockEvent,
+        say: mockSay,
+        logger: mockLogger,
+        args: ['-5'],
+        invokedName: 'dice',
+        client: mockClient,
+      }),
+    ).rejects.toMatchObject({
+      userMessage: '有効な正の整数を指定してください。',
     });
 
     expect(randomUtils.getRandomInt).not.toHaveBeenCalled();
-    expect(mockSay).toHaveBeenCalledWith({
-      text: '有効な正の整数を指定してください。',
-    });
+    expect(mockSay).not.toHaveBeenCalled();
   });
 
   it('should handle thread replies', async () => {
