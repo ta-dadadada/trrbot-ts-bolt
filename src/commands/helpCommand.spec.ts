@@ -90,6 +90,7 @@ describe('HelpCommand', () => {
         error: vi.fn(),
       } as Partial<Logger> as Logger,
       args: [],
+      invokedName: 'help',
       client: {} as WebClient,
     };
 

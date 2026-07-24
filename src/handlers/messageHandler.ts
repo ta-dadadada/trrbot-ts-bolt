@@ -1,6 +1,6 @@
 import { App } from '@slack/bolt';
 import { ReactionService } from '../services/reactionService';
-import { processCommand } from './mentionHandler';
+import { processCommand } from '../commands/router';
 
 /**
  * メッセージイベントハンドラの登録

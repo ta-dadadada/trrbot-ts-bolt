@@ -62,6 +62,7 @@ describe('DiceCommand', () => {
       say: mockSay,
       logger: mockLogger,
       args: [],
+      invokedName: 'dice',
       client: mockClient,
     });
 
@@ -127,6 +128,7 @@ describe('DiceCommand', () => {
       say: mockSay,
       logger: mockLogger,
       args: [],
+      invokedName: 'dice',
       client: mockClient,
     });
 

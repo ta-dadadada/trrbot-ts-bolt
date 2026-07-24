@@ -40,6 +40,7 @@ describe('errorHandler', () => {
       say: mockSay as never,
       logger: mockLogger,
       args: ['invalid'],
+      invokedName: 'dice',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       client: {} as any,
     };
