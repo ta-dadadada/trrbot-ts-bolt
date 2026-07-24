@@ -32,6 +32,15 @@ npm test
 
 ## 開発者向け情報
 
+### TypeScript
+
+[TypeScript 7.0の公式案内](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/)にあるとおり、TypeScript 7.0はプログラムAPIを提供していないため、互換構成として2つのコンパイラーパッケージを併用しています。
+
+- `@typescript/native`: TypeScript 7の`tsc`を提供し、型検査に使用
+- `typescript`: `typescript-eslint`が必要とするTypeScript 6のAPIを提供
+
+TypeScript 7.1以降でプログラムAPIと`typescript-eslint`の対応状況を確認し、互換パッケージが不要になった時点で構成を見直します。
+
 ### Git Hooks
 
 このプロジェクトでは、コード品質を保つためにGit Hooksを使用しています。`npm install`を実行すると、Huskyが自動的に以下のフックを設定します：
