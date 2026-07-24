@@ -2,7 +2,6 @@ import { Command, CommandContext, getThreadTs } from './types';
 import { GroupService } from '../services/groupService';
 import { BOT_MENTION_NAME } from '../config/constants';
 import { validateGroupName, validateItemText, ValidationError } from '../utils/validation';
-import { handleCommandError, logCommandSuccess } from '../utils/errorHandler';
 import { DatabaseError } from '../utils/errors';
 
 /**
@@ -160,35 +159,25 @@ export class GroupCommand implements Command {
    * グループを作成する
    */
   private async handleCreate(context: CommandContext, groupName: string): Promise<void> {
-    const { event, say, logger } = context;
+    const { event, say } = context;
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
 
+    const validatedGroupName = validateGroupName(groupName);
+
     try {
-      // グループ名のバリデーション
-      const validatedGroupName = validateGroupName(groupName);
-
-      try {
-        GroupService.createGroup(validatedGroupName);
-      } catch (error) {
-        throw new DatabaseError('Failed to create group', {
-          groupName: validatedGroupName,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-
-      await say({
-        text: `グループ "${validatedGroupName}" を作成しました。`,
-        thread_ts: threadTs,
-      });
-
-      logCommandSuccess(logger, 'group-create', {
-        user: event.user,
-        groupName: validatedGroupName,
-      });
+      GroupService.createGroup(validatedGroupName);
     } catch (error) {
-      await handleCommandError(error, context, 'group-create');
+      throw new DatabaseError('Failed to create group', {
+        groupName: validatedGroupName,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
+
+    await say({
+      text: `グループ "${validatedGroupName}" を作成しました。`,
+      thread_ts: threadTs,
+    });
   }
 
   /**
@@ -252,30 +241,26 @@ export class GroupCommand implements Command {
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
 
-    try {
-      // 空白で区切られた複数のアイテムを処理
-      const items = itemText.split(' ').filter((item) => item.trim() !== '');
-
-      // 各アイテムをバリデーション
-      const validatedItems: string[] = [];
-      for (const item of items) {
-        try {
-          const validated = validateItemText(item);
-          validatedItems.push(validated);
-        } catch (error) {
-          if (error instanceof ValidationError) {
-            await say({
-              text: `アイテム "${item}" のバリデーションエラー: ${error.message}`,
-              thread_ts: threadTs,
-            });
-            return;
-          }
-          throw error;
+    const items = itemText.split(' ').filter((item) => item.trim() !== '');
+    const validatedItems: string[] = [];
+    for (const item of items) {
+      try {
+        validatedItems.push(validateItemText(item));
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          throw new ValidationError(
+            error.message,
+            `アイテム "${item}" のバリデーションエラー: ${error.message}`,
+            error.context,
+            'message-thread',
+          );
         }
+        throw error;
       }
+    }
 
+    try {
       if (validatedItems.length === 1) {
-        // 単一アイテムの場合
         const result = GroupService.addItemToGroup(groupName, validatedItems[0]);
 
         if (result !== undefined) {
@@ -290,7 +275,6 @@ export class GroupCommand implements Command {
           });
         }
       } else {
-        // 複数アイテムの場合
         const results = GroupService.addItemsToGroup(groupName, validatedItems);
 
         if (results.length > 0) {
@@ -306,10 +290,13 @@ export class GroupCommand implements Command {
         }
       }
     } catch (error) {
-      await say({
-        text: `アイテムの追加に失敗しました: ${(error as Error).message}`,
-        thread_ts: threadTs,
-      });
+      const message = error instanceof Error ? error.message : String(error);
+      throw new DatabaseError(
+        'Failed to add group items',
+        { groupName, items: validatedItems, error: message },
+        `アイテムの追加に失敗しました: ${message}`,
+        'message-thread',
+      );
     }
   }
 

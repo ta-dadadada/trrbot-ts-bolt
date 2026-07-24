@@ -1,3 +1,5 @@
+export type ErrorReplyMode = 'inherit' | 'message-thread';
+
 /**
  * ボット用のカスタムエラークラス
  * すべてのボット固有エラーの基底クラス
@@ -9,6 +11,7 @@ export class BotError extends Error {
    * @param context エラーコンテキスト情報（ユーザーID、コマンド引数など）
    * @param isRetryable リトライ可能なエラーかどうか
    * @param severity ログレベル（'error' | 'warn'）
+   * @param replyMode エラー応答のスレッド方針
    */
   constructor(
     message: string,
@@ -16,6 +19,7 @@ export class BotError extends Error {
     public readonly context?: Record<string, unknown>,
     public readonly isRetryable: boolean = false,
     public readonly severity: 'error' | 'warn' = 'error',
+    public readonly replyMode: ErrorReplyMode = 'inherit',
   ) {
     super(message);
     this.name = 'BotError';
@@ -30,8 +34,13 @@ export class BotError extends Error {
  * - 警告レベル（システムエラーではない）
  */
 export class ValidationError extends BotError {
-  constructor(message: string, userMessage: string, context?: Record<string, unknown>) {
-    super(message, userMessage, context, false, 'warn');
+  constructor(
+    message: string,
+    userMessage: string,
+    context?: Record<string, unknown>,
+    replyMode: ErrorReplyMode = 'inherit',
+  ) {
+    super(message, userMessage, context, false, 'warn', replyMode);
     this.name = 'ValidationError';
   }
 }
@@ -43,14 +52,13 @@ export class ValidationError extends BotError {
  * - エラーレベル（システムエラー）
  */
 export class DatabaseError extends BotError {
-  constructor(message: string, context?: Record<string, unknown>) {
-    super(
-      message,
-      'データベース操作中にエラーが発生しました。しばらく待ってから再試行してください。',
-      context,
-      true,
-      'error',
-    );
+  constructor(
+    message: string,
+    context?: Record<string, unknown>,
+    userMessage = 'データベース操作中にエラーが発生しました。しばらく待ってから再試行してください。',
+    replyMode: ErrorReplyMode = 'inherit',
+  ) {
+    super(message, userMessage, context, true, 'error', replyMode);
     this.name = 'DatabaseError';
   }
 }
@@ -62,14 +70,13 @@ export class DatabaseError extends BotError {
  * - エラーレベル（システムエラー）
  */
 export class SlackAPIError extends BotError {
-  constructor(message: string, context?: Record<string, unknown>) {
-    super(
-      message,
-      'Slack APIとの通信中にエラーが発生しました。しばらく待ってから再試行してください。',
-      context,
-      true,
-      'error',
-    );
+  constructor(
+    message: string,
+    context?: Record<string, unknown>,
+    userMessage = 'Slack APIとの通信中にエラーが発生しました。しばらく待ってから再試行してください。',
+    replyMode: ErrorReplyMode = 'inherit',
+  ) {
+    super(message, userMessage, context, true, 'error', replyMode);
     this.name = 'SlackAPIError';
   }
 }

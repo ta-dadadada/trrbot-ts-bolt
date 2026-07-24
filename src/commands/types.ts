@@ -34,6 +34,7 @@ export interface CommandContext {
   say: SayFunction;
   logger: Logger;
   args: string[];
+  invokedName: string;
   client: WebClient;
 }
 

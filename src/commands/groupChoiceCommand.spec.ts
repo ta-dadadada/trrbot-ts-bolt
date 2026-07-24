@@ -65,6 +65,7 @@ describe('GroupChoiceCommand', () => {
       say: mockSay,
       logger: mockLogger,
       args: [],
+      invokedName: 'groupchoice',
       client: mockClient,
     });
 
@@ -84,6 +85,7 @@ describe('GroupChoiceCommand', () => {
       say: mockSay,
       logger: mockLogger,
       args: ['存在しないグループ'],
+      invokedName: 'groupchoice',
       client: mockClient,
     });
 
@@ -102,6 +104,7 @@ describe('GroupChoiceCommand', () => {
       say: mockSay,
       logger: mockLogger,
       args: ['テストグループ'],
+      invokedName: 'groupchoice',
       client: mockClient,
     });
 
@@ -123,6 +126,7 @@ describe('GroupChoiceCommand', () => {
       say: mockSay,
       logger: mockLogger,
       args: ['テストグループ', '-', '除外アイテム1', '除外アイテム2'],
+      invokedName: 'groupchoice',
       client: mockClient,
     });
 
@@ -145,6 +149,7 @@ describe('GroupChoiceCommand', () => {
       say: mockSay,
       logger: mockLogger,
       args: ['テストグループ', '-', '除外アイテム1', '除外アイテム2'],
+      invokedName: 'groupchoice',
       client: mockClient,
     });
 
@@ -171,6 +176,7 @@ describe('GroupChoiceCommand', () => {
       say: mockSay,
       logger: mockLogger,
       args: ['テストグループ'],
+      invokedName: 'groupchoice',
       client: mockClient,
     });
 
@@ -190,6 +196,7 @@ describe('GroupChoiceCommand', () => {
       say: mockSay,
       logger: mockLogger,
       args: ['複数', '単語', 'グループ'],
+      invokedName: 'groupchoice',
       client: mockClient,
     });
 
@@ -210,6 +217,7 @@ describe('GroupChoiceCommand', () => {
       say: mockSay,
       logger: mockLogger,
       args: ['複数', '単語', 'グループ', '-', '除外アイテム1', '除外アイテム2'],
+      invokedName: 'groupchoice',
       client: mockClient,
     });
 

@@ -50,7 +50,10 @@ export async function handleCommandError(
   commandName?: string,
 ): Promise<void> {
   const { logger, say, event } = context;
-  const threadTs = getThreadTs(event);
+  const threadTs =
+    error instanceof BotError && error.replyMode === 'message-thread'
+      ? event.thread_ts || event.ts
+      : getThreadTs(event);
 
   if (commandName) {
     logger.setName(`cmd:${commandName}`);
@@ -111,7 +114,10 @@ export function logCommandSuccess(
   context: Partial<LogContext>,
 ): void {
   logger.setName(`cmd:${commandName}`);
-  logStructured(logger, 'info', 'Command executed successfully', context as LogContext);
+  logStructured(logger, 'info', 'Command executed successfully', {
+    command: commandName,
+    ...context,
+  });
 }
 
 /**

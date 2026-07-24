@@ -1,29 +1,32 @@
-import { ReactionMappingModel, ReactionMapping, CreateReactionMappingData } from '../models/reactionMapping';
+import {
+  ReactionMappingModel,
+  ReactionMapping,
+  CreateReactionMappingData,
+} from '../models/reactionMapping';
 
 /**
  * リアクション関連の処理を行うサービスクラス
  */
 export class ReactionService {
   /**
-   * メッセージテキストに対応するリアクションを取得する
+   * メッセージに一致したマッピングをリアクションごとに1件返す
    * @param messageText メッセージテキスト
-   * @returns 対応するリアクションの配列
+   * @returns DB順で最初に一致した一意なリアクションのマッピング
    */
-  static getReactionsForMessage(messageText: string): string[] {
-    // すべてのリアクションマッピングを取得
+  static findMatchingMappings(messageText: string): ReactionMapping[] {
     const allMappings = ReactionMappingModel.getAll();
-    
-    // メッセージテキストに含まれるトリガーテキストに対応するリアクションを抽出
-    const matchingReactions: string[] = [];
-    
-    allMappings.forEach((mapping) => {
-      if (messageText.includes(mapping.triggerText)) {
-        matchingReactions.push(mapping.reaction);
+
+    const seenReactions = new Set<string>();
+    const matchingMappings: ReactionMapping[] = [];
+
+    for (const mapping of allMappings) {
+      if (messageText.includes(mapping.triggerText) && !seenReactions.has(mapping.reaction)) {
+        seenReactions.add(mapping.reaction);
+        matchingMappings.push(mapping);
       }
-    });
-    
-    // 重複を除去して返す
-    return [...new Set(matchingReactions)];
+    }
+
+    return matchingMappings;
   }
 
   /**
@@ -37,7 +40,7 @@ export class ReactionService {
       triggerText,
       reaction,
     };
-    
+
     return ReactionMappingModel.create(data);
   }
 

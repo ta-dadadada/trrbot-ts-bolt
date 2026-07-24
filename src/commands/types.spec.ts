@@ -77,6 +77,7 @@ describe('Type definitions', () => {
       expectTypeOf<CommandContext>().toHaveProperty('say');
       expectTypeOf<CommandContext>().toHaveProperty('logger');
       expectTypeOf<CommandContext>().toHaveProperty('args');
+      expectTypeOf<CommandContext>().toHaveProperty('invokedName');
       expectTypeOf<CommandContext>().toHaveProperty('client');
     });
 

@@ -1,31 +1,33 @@
-import { Command } from './types';
-import { HelpCommand } from './helpCommand';
 import { ChoiceCommand } from './choiceCommand';
-import { GroupChoiceCommand } from './groupChoiceCommand';
-import { ReactionCommand } from './reactionCommand';
-import { GroupCommand } from './groupCommand';
+import { DefaultCommand } from './defaultCommand';
 import { DiceCommand } from './diceCommand';
-import { ZakoSecretCommand } from './zakoSecretCommand';
+import { GroupChoiceCommand } from './groupChoiceCommand';
+import { GroupCommand } from './groupCommand';
+import { GroupShuffleCommand } from './groupShuffleCommand';
+import { HelpCommand } from './helpCommand';
+import { ReactionCommand } from './reactionCommand';
 import { SecretCommand } from './secretCommand';
 import { ShuffleCommand } from './shuffleCommand';
-import { GroupShuffleCommand } from './groupShuffleCommand';
-import { DefaultCommand } from './defaultCommand';
+import type { Command } from './types';
+import { ZakoSecretCommand } from './zakoSecretCommand';
 
-/**
- * コマンド登録情報
- */
 export interface CommandRegistration {
   command: Command;
   primaryName: string;
   aliases: string[];
   displayName?: string;
-  dmOnly?: boolean; // DM専用コマンドかどうか
+  dmOnly?: boolean;
+  helpExampleIndexes?: readonly number[];
 }
 
-/**
- * 利用可能なすべてのコマンドのインスタンスを作成
- */
-const helpCommand = new HelpCommand();
+export interface CommandResolution {
+  command: Command;
+  registration?: CommandRegistration;
+  invokedName: string;
+}
+
+const registrations: CommandRegistration[] = [];
+const helpCommand = new HelpCommand(() => registrations);
 const choiceCommand = new ChoiceCommand();
 const groupChoiceCommand = new GroupChoiceCommand();
 const reactionCommand = new ReactionCommand();
@@ -37,10 +39,7 @@ const shuffleCommand = new ShuffleCommand();
 const groupShuffleCommand = new GroupShuffleCommand();
 const defaultCommand = new DefaultCommand();
 
-/**
- * コマンド登録情報の配列
- */
-const registrations: CommandRegistration[] = [
+registrations.push(
   {
     command: helpCommand,
     primaryName: 'help',
@@ -71,6 +70,7 @@ const registrations: CommandRegistration[] = [
     command: diceCommand,
     primaryName: 'dice',
     aliases: [],
+    helpExampleIndexes: [0, 2],
   },
   {
     command: zakoSecretCommand,
@@ -95,91 +95,55 @@ const registrations: CommandRegistration[] = [
     aliases: ['gs', 'group-shuffle', 'gshuffle'],
     displayName: 'gs',
   },
-];
+);
 
-/**
- * コマンドマップを構築する
- * @param registrations コマンド登録情報の配列
- * @returns コマンド名をキーとしたコマンドマップ
- */
-function buildCommandMap(registrations: CommandRegistration[]): Record<string, Command> {
-  const map: Record<string, Command> = {};
+function normalizeCommandName(name: string): string {
+  return name.toLowerCase();
+}
 
-  for (const reg of registrations) {
-    // 正式名でも登録
-    map[reg.primaryName] = reg.command;
-    // エイリアスでも登録
-    for (const alias of reg.aliases) {
-      map[alias] = reg.command;
+function buildRegistrationMap(
+  commandRegistrations: readonly CommandRegistration[],
+): Map<string, CommandRegistration> {
+  const map = new Map<string, CommandRegistration>();
+
+  for (const registration of commandRegistrations) {
+    for (const name of [registration.primaryName, ...registration.aliases]) {
+      const normalizedName = normalizeCommandName(name);
+      if (map.has(normalizedName)) {
+        throw new Error(`Duplicate command name: ${normalizedName}`);
+      }
+      map.set(normalizedName, registration);
     }
   }
 
   return map;
 }
 
-/**
- * コマンド名からコマンド登録情報を検索する
- * @param commandName コマンド名
- * @returns コマンド登録情報（見つからない場合はundefined）
- */
-export function getCommandRegistration(commandName: string): CommandRegistration | undefined {
-  return registrations.find(
-    (reg) => reg.primaryName === commandName || reg.aliases.includes(commandName),
-  );
+const commandRegistrations: readonly CommandRegistration[] = Object.freeze(registrations);
+const registrationMap = buildRegistrationMap(commandRegistrations);
+const diceRegistration = registrationMap.get('dice');
+
+function isDiceCode(text: string): boolean {
+  return /^\d+d\d+$/i.test(text);
 }
 
-/**
- * コマンド名をキーとしたコマンドマップ
- */
-const commandMap: Record<string, Command> = buildCommandMap(registrations);
+export function resolveCommand(commandName: string): CommandResolution {
+  const invokedName = normalizeCommandName(commandName);
 
-// helpCommandにコマンド登録情報を設定
-helpCommand.setCommands(registrations);
-
-/**
- * コマンド登録情報の配列をエクスポート
- */
-export { registrations as commandRegistrations };
-
-/**
- * ダイスコード（例: 2d6）かどうかをチェックする
- * @param text チェックする文字列
- * @returns ダイスコードの場合はtrue、そうでない場合はfalse
- */
-const isDiceCode = (text: string): boolean => {
-  // nDm または ndm 形式（大文字小文字を区別しない）
-  return /^\d+d\d+$/i.test(text);
-};
-
-/**
- * コマンド名からコマンドを取得する
- * @param commandName コマンド名
- * @returns コマンドインスタンス（存在しない場合はデフォルトコマンド）
- */
-export const getCommand = (commandName: string): Command => {
-  const lowerCommandName = commandName.toLowerCase();
-
-  // ダイスコード形式（例: 2d6）の場合はdiceCommandを返す
-  if (isDiceCode(lowerCommandName)) {
-    return diceCommand;
+  if (isDiceCode(invokedName) && diceRegistration) {
+    return {
+      command: diceRegistration.command,
+      registration: diceRegistration,
+      invokedName,
+    };
   }
 
-  const command = commandMap[lowerCommandName];
-  return command || defaultCommand;
-};
+  const registration = registrationMap.get(invokedName);
+  return {
+    command: registration?.command ?? defaultCommand,
+    registration,
+    invokedName,
+  };
+}
 
-/**
- * 利用可能なすべてのコマンドを取得する
- * @returns コマンドの配列
- */
-export const getAllCommands = (): Command[] => {
-  return Object.values(commandMap);
-};
-
-/**
- * デフォルトコマンドを取得する
- * @returns デフォルトコマンド
- */
-export const getDefaultCommand = (): Command => {
-  return defaultCommand;
-};
+export { commandRegistrations };

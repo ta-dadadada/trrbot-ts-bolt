@@ -12,7 +12,19 @@ describe('Error classes', () => {
       expect(error.context).toEqual(context);
       expect(error.isRetryable).toBe(true);
       expect(error.severity).toBe('error');
+      expect(error.replyMode).toBe('inherit');
       expect(error.name).toBe('BotError');
+    });
+
+    it('should retain reply mode', () => {
+      const error = new ValidationError(
+        'Invalid input',
+        'Invalid input provided',
+        undefined,
+        'message-thread',
+      );
+
+      expect(error.replyMode).toBe('message-thread');
     });
 
     it('should have default values for optional parameters', () => {
