@@ -65,10 +65,7 @@ describe('HelpCommand', () => {
     ];
 
     // ヘルプコマンドのインスタンスを作成
-    const helpCommand = new HelpCommand();
-
-    // コマンド登録情報を設定
-    helpCommand.setCommands(mockRegistrations);
+    const helpCommand = new HelpCommand(() => mockRegistrations);
 
     // sayのモック関数を作成
     const mockSay = vi.fn();

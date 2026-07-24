@@ -8,16 +8,7 @@ import { BOT_MENTION_NAME } from '../config/constants';
 export class HelpCommand implements Command {
   description = 'このヘルプメッセージを表示します';
 
-  // 外部から注入されるコマンド登録情報
-  private registrations: CommandRegistration[] = [];
-
-  /**
-   * コマンド登録情報を設定する
-   * @param registrations コマンド登録情報の配列
-   */
-  setCommands(registrations: CommandRegistration[]): void {
-    this.registrations = registrations;
-  }
+  constructor(private readonly getRegistrations: () => readonly CommandRegistration[]) {}
 
   getExamples(commandName: string): string[] {
     return [`${BOT_MENTION_NAME} ${commandName}`];
@@ -32,7 +23,7 @@ export class HelpCommand implements Command {
     helpText += `_ヒント: DMではメンション不要でコマンドを実行できます_\n\n`;
 
     // 各コマンドのヘルプテキストを生成
-    for (const reg of this.registrations) {
+    for (const reg of this.getRegistrations()) {
       // カスタムヘルプテキストがある場合はそれを使用
       if (reg.command.getHelpText) {
         const displayName = reg.displayName || reg.primaryName;
@@ -56,15 +47,16 @@ export class HelpCommand implements Command {
         helpText += `${nameDisplay} - ${reg.command.description}\n`;
 
         const examples = reg.command.getExamples(displayName);
-        if (examples && examples.length > 0) {
-          helpText += `  例: \`${examples[0]}\``;
-
-          // diceコマンドの場合は追加の例も表示
-          if (reg.primaryName === 'dice' && examples.length > 2) {
-            helpText += `, \`${examples[2]}\``;
+        if (examples.length > 0) {
+          const indexes = reg.helpExampleIndexes ?? [0];
+          const displayedExamples = indexes
+            .map((index) => examples[index])
+            .filter((example): example is string => example !== undefined);
+          if (displayedExamples.length > 0) {
+            helpText += `  例: ${displayedExamples
+              .map((example) => `\`${example}\``)
+              .join(', ')}\n`;
           }
-
-          helpText += '\n';
         }
 
         helpText += '\n';
