@@ -208,6 +208,7 @@ docker-compose down -v
   - `app.ts`: Boltアプリケーションの設定
   - `index.ts`: アプリケーションのエントリーポイント
   - `config/`: 設定関連
+  - `db/`: データベース接続・スキーマ管理
   - `models/`: データモデル
   - `services/`: ビジネスロジック
   - `handlers/`: イベントハンドラ
