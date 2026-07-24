@@ -1,4 +1,4 @@
-import db from '../config/database';
+import { getDatabase } from '../db/connection';
 
 /**
  * リアクションマッピングの型定義
@@ -29,6 +29,7 @@ export class ReactionMappingModel {
    * @returns リアクションマッピングの配列
    */
   static getAll(): ReactionMapping[] {
+    const db = getDatabase();
     const stmt = db.prepare(`
       SELECT
         id,
@@ -39,7 +40,7 @@ export class ReactionMappingModel {
         updated_at as updatedAt
       FROM reaction_mappings
     `);
-    
+
     return stmt.all() as ReactionMapping[];
   }
 
@@ -49,6 +50,7 @@ export class ReactionMappingModel {
    * @returns リアクションマッピングの配列
    */
   static getByTriggerText(triggerText: string): ReactionMapping[] {
+    const db = getDatabase();
     const stmt = db.prepare(`
       SELECT
         id,
@@ -60,7 +62,7 @@ export class ReactionMappingModel {
       FROM reaction_mappings
       WHERE trigger_text = ?
     `);
-    
+
     return stmt.all(triggerText) as ReactionMapping[];
   }
 
@@ -70,11 +72,12 @@ export class ReactionMappingModel {
    * @returns 作成されたリアクションマッピングのID
    */
   static create(data: CreateReactionMappingData): number {
+    const db = getDatabase();
     const stmt = db.prepare(`
       INSERT INTO reaction_mappings (trigger_text, reaction)
       VALUES (?, ?)
     `);
-    
+
     const result = stmt.run(data.triggerText, data.reaction);
     return result.lastInsertRowid as number;
   }
@@ -85,6 +88,7 @@ export class ReactionMappingModel {
    * @returns 削除に成功した場合はtrue、失敗した場合はfalse
    */
   static delete(id: number): boolean {
+    const db = getDatabase();
     const stmt = db.prepare('DELETE FROM reaction_mappings WHERE id = ?');
     const result = stmt.run(id);
     return result.changes > 0;
@@ -97,7 +101,10 @@ export class ReactionMappingModel {
    * @returns 削除に成功した場合はtrue、失敗した場合はfalse
    */
   static deleteByTriggerAndReaction(triggerText: string, reaction: string): boolean {
-    const stmt = db.prepare('DELETE FROM reaction_mappings WHERE trigger_text = ? AND reaction = ?');
+    const db = getDatabase();
+    const stmt = db.prepare(
+      'DELETE FROM reaction_mappings WHERE trigger_text = ? AND reaction = ?',
+    );
     const result = stmt.run(triggerText, reaction);
     return result.changes > 0;
   }
@@ -109,13 +116,14 @@ export class ReactionMappingModel {
    * @returns 更新に成功した場合はtrue、失敗した場合はfalse
    */
   static incrementUsageCount(triggerText: string, reaction: string): boolean {
+    const db = getDatabase();
     const stmt = db.prepare(`
       UPDATE reaction_mappings
       SET usage_count = usage_count + 1,
           updated_at = CURRENT_TIMESTAMP
       WHERE trigger_text = ? AND reaction = ?
     `);
-    
+
     const result = stmt.run(triggerText, reaction);
     return result.changes > 0;
   }
