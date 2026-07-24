@@ -1,5 +1,5 @@
 import { Command, CommandContext, getThreadTs } from './types';
-import { ReactionService } from '../services/reactionService';
+import type { ReactionOperations } from '../services/reactionService';
 import { FilesUploadV2Arguments } from '@slack/web-api';
 import { BOT_MENTION_NAME } from '../config/constants';
 import { validateTriggerText, ValidationError } from '../utils/validation';
@@ -12,6 +12,8 @@ import { DatabaseError, SlackAPIError } from '../utils/errors';
 export class ReactionCommand implements Command {
   description =
     'リアクションマッピングを管理します（チャンネルメッセージに自動的にリアクションを追加）';
+
+  constructor(private readonly reactionService: ReactionOperations) {}
 
   getExamples(commandName: string): string[] {
     return [
@@ -94,7 +96,7 @@ export class ReactionCommand implements Command {
     let validatedTriggerText: string;
     try {
       validatedTriggerText = validateTriggerText(triggerText);
-      ReactionService.addReactionMapping(validatedTriggerText, reaction);
+      this.reactionService.addReactionMapping(validatedTriggerText, reaction);
     } catch (error) {
       if (error instanceof ValidationError) {
         throw new ValidationError(
@@ -131,7 +133,7 @@ export class ReactionCommand implements Command {
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
 
-    const success = ReactionService.removeReactionMapping(triggerText, reaction);
+    const success = this.reactionService.removeReactionMapping(triggerText, reaction);
 
     if (success) {
       await say({
@@ -156,7 +158,7 @@ export class ReactionCommand implements Command {
 
     try {
       // リアクションマッピングを取得
-      const mappings = ReactionService.getAllReactionMappings();
+      const mappings = this.reactionService.getAllReactionMappings();
 
       if (mappings.length === 0) {
         await say({

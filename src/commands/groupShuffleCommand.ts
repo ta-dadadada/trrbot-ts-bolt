@@ -1,5 +1,5 @@
 import { Command, CommandContext, getThreadTs } from './types';
-import { GroupService } from '../services/groupService';
+import type { GroupOperations } from '../services/groupService';
 import { shuffleArray } from '../utils/random';
 import { BOT_MENTION_NAME } from '../config/constants';
 
@@ -8,6 +8,8 @@ import { BOT_MENTION_NAME } from '../config/constants';
  */
 export class GroupShuffleCommand implements Command {
   description = '指定されたグループ内のアイテムをランダムに並び替えて順序付けて返します';
+
+  constructor(private readonly groupService: GroupOperations) {}
 
   getExamples(commandName: string): string[] {
     return [`${BOT_MENTION_NAME} ${commandName} グループ名`];
@@ -29,7 +31,7 @@ export class GroupShuffleCommand implements Command {
     const groupName = args[0];
 
     // グループからアイテムを取得
-    const items = GroupService.getItemsByGroupName(groupName);
+    const items = this.groupService.getItemsByGroupName(groupName);
 
     // アイテムが存在しない場合はエラーメッセージを表示
     if (items.length === 0) {

@@ -1,74 +1,50 @@
-import {
-  ReactionMappingModel,
-  ReactionMapping,
-  CreateReactionMappingData,
-} from '../models/reactionMapping';
+import type { ReactionMapping } from '../models/reactionMapping';
+import type { ReactionMappingRepository } from '../repositories/sqliteReactionMappingRepository';
 
 /**
- * リアクション関連の処理を行うサービスクラス
+ * Reaction系のCommandとHandlerが利用するユースケース。
  */
-export class ReactionService {
-  /**
-   * メッセージに一致したマッピングをリアクションごとに1件返す
-   * @param messageText メッセージテキスト
-   * @returns DB順で最初に一致した一意なリアクションのマッピング
-   */
-  static findMatchingMappings(messageText: string): ReactionMapping[] {
-    const allMappings = ReactionMappingModel.getAll();
+export interface ReactionOperations {
+  findMatchingMappings(messageText: string): ReactionMapping[];
+  addReactionMapping(triggerText: string, reaction: string): number;
+  removeReactionMapping(triggerText: string, reaction: string): boolean;
+  getAllReactionMappings(): ReactionMapping[];
+  incrementReactionUsage(triggerText: string, reaction: string): boolean;
+}
 
+/**
+ * リアクション関連のユースケースを提供する。
+ */
+export class ReactionService implements ReactionOperations {
+  constructor(private readonly repository: ReactionMappingRepository) {}
+
+  findMatchingMappings(messageText: string): ReactionMapping[] {
+    const allMappings = this.repository.getAll();
     const seenReactions = new Set<string>();
-    const matchingMappings: ReactionMapping[] = [];
 
-    for (const mapping of allMappings) {
-      if (messageText.includes(mapping.triggerText) && !seenReactions.has(mapping.reaction)) {
-        seenReactions.add(mapping.reaction);
-        matchingMappings.push(mapping);
+    return allMappings.filter((mapping) => {
+      if (!messageText.includes(mapping.triggerText) || seenReactions.has(mapping.reaction)) {
+        return false;
       }
-    }
 
-    return matchingMappings;
+      seenReactions.add(mapping.reaction);
+      return true;
+    });
   }
 
-  /**
-   * 新しいリアクションマッピングを追加する
-   * @param triggerText トリガーテキスト
-   * @param reaction リアクション
-   * @returns 作成されたリアクションマッピングのID
-   */
-  static addReactionMapping(triggerText: string, reaction: string): number {
-    const data: CreateReactionMappingData = {
-      triggerText,
-      reaction,
-    };
-
-    return ReactionMappingModel.create(data);
+  addReactionMapping(triggerText: string, reaction: string): number {
+    return this.repository.create(triggerText, reaction);
   }
 
-  /**
-   * リアクションマッピングを削除する
-   * @param triggerText トリガーテキスト
-   * @param reaction リアクション
-   * @returns 削除に成功した場合はtrue、失敗した場合はfalse
-   */
-  static removeReactionMapping(triggerText: string, reaction: string): boolean {
-    return ReactionMappingModel.deleteByTriggerAndReaction(triggerText, reaction);
+  removeReactionMapping(triggerText: string, reaction: string): boolean {
+    return this.repository.deleteByTriggerAndReaction(triggerText, reaction);
   }
 
-  /**
-   * すべてのリアクションマッピングを取得する
-   * @returns リアクションマッピングの配列
-   */
-  static getAllReactionMappings(): ReactionMapping[] {
-    return ReactionMappingModel.getAll();
+  getAllReactionMappings(): ReactionMapping[] {
+    return this.repository.getAll();
   }
 
-  /**
-   * リアクションの使用回数をインクリメントする
-   * @param triggerText トリガーテキスト
-   * @param reaction リアクション
-   * @returns 更新に成功した場合はtrue、失敗した場合はfalse
-   */
-  static incrementReactionUsage(triggerText: string, reaction: string): boolean {
-    return ReactionMappingModel.incrementUsageCount(triggerText, reaction);
+  incrementReactionUsage(triggerText: string, reaction: string): boolean {
+    return this.repository.incrementUsageCount(triggerText, reaction);
   }
 }

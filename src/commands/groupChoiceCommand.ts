@@ -1,5 +1,5 @@
 import { Command, CommandContext, getThreadTs } from './types';
-import { GroupService } from '../services/groupService';
+import type { GroupOperations } from '../services/groupService';
 import { BOT_MENTION_NAME } from '../config/constants';
 
 /**
@@ -7,6 +7,8 @@ import { BOT_MENTION_NAME } from '../config/constants';
  */
 export class GroupChoiceCommand implements Command {
   description = '指定されたグループからランダムに1つのアイテムを選びます';
+
+  constructor(private readonly groupService: GroupOperations) {}
 
   getExamples(commandName: string): string[] {
     return [
@@ -36,12 +38,12 @@ export class GroupChoiceCommand implements Command {
       // '-' がある場合、その前をグループ名、後ろを除外アイテムとして扱う
       groupName = args.slice(0, excludeIndex).join(' ');
       const excludeItems = args.slice(excludeIndex + 1);
-      item = GroupService.getRandomItemFromGroupExcluding(groupName, excludeItems);
+      item = this.groupService.getRandomItemFromGroupExcluding(groupName, excludeItems);
     } else {
       // '-' がない場合は従来通りの処理
       // 複数の単語からなるグループ名に対応
       groupName = args.join(' ');
-      item = GroupService.getRandomItemFromGroup(groupName);
+      item = this.groupService.getRandomItemFromGroup(groupName);
     }
 
     if (!item) {

@@ -3,17 +3,20 @@ import { GroupChoiceCommand } from './groupChoiceCommand';
 import { SayFunction, SlackEvent } from './types';
 import { Logger } from '@slack/bolt';
 import { WebClient } from '@slack/web-api';
-import { GroupService } from '../services/groupService';
+import type { GroupOperations } from '../services/groupService';
 
-// GroupServiceのモック
-vi.mock('../services/groupService', () => {
-  return {
-    GroupService: {
-      getRandomItemFromGroup: vi.fn(),
-      getRandomItemFromGroupExcluding: vi.fn(),
-    },
-  };
-});
+const groupService = {
+  getAllGroups: vi.fn(),
+  createGroup: vi.fn(),
+  deleteGroup: vi.fn(),
+  getItemsByGroupName: vi.fn(),
+  getRandomItemFromGroup: vi.fn(),
+  getRandomItemFromGroupExcluding: vi.fn(),
+  addItemToGroup: vi.fn(),
+  addItemsToGroup: vi.fn(),
+  removeItemFromGroup: vi.fn(),
+  clearGroupItems: vi.fn(),
+} satisfies GroupOperations;
 
 describe('GroupChoiceCommand', () => {
   let command: GroupChoiceCommand;
@@ -23,7 +26,7 @@ describe('GroupChoiceCommand', () => {
   let mockClient: WebClient;
 
   beforeEach(() => {
-    command = new GroupChoiceCommand();
+    command = new GroupChoiceCommand(groupService);
     mockSay = vi.fn().mockResolvedValue({
       ok: true,
       channel: 'C123456',
@@ -69,8 +72,8 @@ describe('GroupChoiceCommand', () => {
       client: mockClient,
     });
 
-    expect(GroupService.getRandomItemFromGroup).not.toHaveBeenCalled();
-    expect(GroupService.getRandomItemFromGroupExcluding).not.toHaveBeenCalled();
+    expect(groupService.getRandomItemFromGroup).not.toHaveBeenCalled();
+    expect(groupService.getRandomItemFromGroupExcluding).not.toHaveBeenCalled();
     expect(mockSay).toHaveBeenCalledWith({
       text: 'グループ名を指定してください。',
     });
@@ -78,7 +81,7 @@ describe('GroupChoiceCommand', () => {
 
   it('存在しないグループ名を指定した場合にエラーメッセージを表示すること', async () => {
     // getRandomItemFromGroupがundefinedを返すようにモック
-    vi.mocked(GroupService.getRandomItemFromGroup).mockReturnValue(undefined);
+    groupService.getRandomItemFromGroup.mockReturnValue(undefined);
 
     await command.execute({
       event: mockEvent,
@@ -89,7 +92,7 @@ describe('GroupChoiceCommand', () => {
       client: mockClient,
     });
 
-    expect(GroupService.getRandomItemFromGroup).toHaveBeenCalledWith('存在しないグループ');
+    expect(groupService.getRandomItemFromGroup).toHaveBeenCalledWith('存在しないグループ');
     expect(mockSay).toHaveBeenCalledWith({
       text: 'グループ "存在しないグループ" は存在しないか、アイテムがありません。',
     });
@@ -97,7 +100,7 @@ describe('GroupChoiceCommand', () => {
 
   it('通常のグループ選択（除外なし）が正しく動作すること', async () => {
     // getRandomItemFromGroupが値を返すようにモック
-    vi.mocked(GroupService.getRandomItemFromGroup).mockReturnValue('選択されたアイテム');
+    groupService.getRandomItemFromGroup.mockReturnValue('選択されたアイテム');
 
     await command.execute({
       event: mockEvent,
@@ -108,8 +111,8 @@ describe('GroupChoiceCommand', () => {
       client: mockClient,
     });
 
-    expect(GroupService.getRandomItemFromGroup).toHaveBeenCalledWith('テストグループ');
-    expect(GroupService.getRandomItemFromGroupExcluding).not.toHaveBeenCalled();
+    expect(groupService.getRandomItemFromGroup).toHaveBeenCalledWith('テストグループ');
+    expect(groupService.getRandomItemFromGroupExcluding).not.toHaveBeenCalled();
     expect(mockSay).toHaveBeenCalledWith({
       text: '選ばれたのは: *選択されたアイテム*',
     });
@@ -117,9 +120,7 @@ describe('GroupChoiceCommand', () => {
 
   it('除外アイテムを指定した場合に正しく動作すること', async () => {
     // getRandomItemFromGroupExcludingが値を返すようにモック
-    vi.mocked(GroupService.getRandomItemFromGroupExcluding).mockReturnValue(
-      '除外後に選択されたアイテム',
-    );
+    groupService.getRandomItemFromGroupExcluding.mockReturnValue('除外後に選択されたアイテム');
 
     await command.execute({
       event: mockEvent,
@@ -130,8 +131,8 @@ describe('GroupChoiceCommand', () => {
       client: mockClient,
     });
 
-    expect(GroupService.getRandomItemFromGroup).not.toHaveBeenCalled();
-    expect(GroupService.getRandomItemFromGroupExcluding).toHaveBeenCalledWith('テストグループ', [
+    expect(groupService.getRandomItemFromGroup).not.toHaveBeenCalled();
+    expect(groupService.getRandomItemFromGroupExcluding).toHaveBeenCalledWith('テストグループ', [
       '除外アイテム1',
       '除外アイテム2',
     ]);
@@ -142,7 +143,7 @@ describe('GroupChoiceCommand', () => {
 
   it('除外アイテムを指定したが結果がない場合にエラーメッセージを表示すること', async () => {
     // getRandomItemFromGroupExcludingがundefinedを返すようにモック
-    vi.mocked(GroupService.getRandomItemFromGroupExcluding).mockReturnValue(undefined);
+    groupService.getRandomItemFromGroupExcluding.mockReturnValue(undefined);
 
     await command.execute({
       event: mockEvent,
@@ -153,7 +154,7 @@ describe('GroupChoiceCommand', () => {
       client: mockClient,
     });
 
-    expect(GroupService.getRandomItemFromGroupExcluding).toHaveBeenCalledWith('テストグループ', [
+    expect(groupService.getRandomItemFromGroupExcluding).toHaveBeenCalledWith('テストグループ', [
       '除外アイテム1',
       '除外アイテム2',
     ]);
@@ -169,7 +170,7 @@ describe('GroupChoiceCommand', () => {
     };
 
     // getRandomItemFromGroupが値を返すようにモック
-    vi.mocked(GroupService.getRandomItemFromGroup).mockReturnValue('選択されたアイテム');
+    groupService.getRandomItemFromGroup.mockReturnValue('選択されたアイテム');
 
     await command.execute({
       event: threadEvent,
@@ -180,7 +181,7 @@ describe('GroupChoiceCommand', () => {
       client: mockClient,
     });
 
-    expect(GroupService.getRandomItemFromGroup).toHaveBeenCalledWith('テストグループ');
+    expect(groupService.getRandomItemFromGroup).toHaveBeenCalledWith('テストグループ');
     expect(mockSay).toHaveBeenCalledWith({
       text: '選ばれたのは: *選択されたアイテム*',
       thread_ts: '123456789.123456',
@@ -189,7 +190,7 @@ describe('GroupChoiceCommand', () => {
 
   it('グループ名に複数の単語を含む場合も正しく動作すること', async () => {
     // getRandomItemFromGroupが値を返すようにモック
-    vi.mocked(GroupService.getRandomItemFromGroup).mockReturnValue('選択されたアイテム');
+    groupService.getRandomItemFromGroup.mockReturnValue('選択されたアイテム');
 
     await command.execute({
       event: mockEvent,
@@ -200,7 +201,7 @@ describe('GroupChoiceCommand', () => {
       client: mockClient,
     });
 
-    expect(GroupService.getRandomItemFromGroup).toHaveBeenCalledWith('複数 単語 グループ');
+    expect(groupService.getRandomItemFromGroup).toHaveBeenCalledWith('複数 単語 グループ');
     expect(mockSay).toHaveBeenCalledWith({
       text: '選ばれたのは: *選択されたアイテム*',
     });
@@ -208,9 +209,7 @@ describe('GroupChoiceCommand', () => {
 
   it('グループ名に複数の単語を含み、除外アイテムを指定した場合も正しく動作すること', async () => {
     // getRandomItemFromGroupExcludingが値を返すようにモック
-    vi.mocked(GroupService.getRandomItemFromGroupExcluding).mockReturnValue(
-      '除外後に選択されたアイテム',
-    );
+    groupService.getRandomItemFromGroupExcluding.mockReturnValue('除外後に選択されたアイテム');
 
     await command.execute({
       event: mockEvent,
@@ -221,7 +220,7 @@ describe('GroupChoiceCommand', () => {
       client: mockClient,
     });
 
-    expect(GroupService.getRandomItemFromGroupExcluding).toHaveBeenCalledWith(
+    expect(groupService.getRandomItemFromGroupExcluding).toHaveBeenCalledWith(
       '複数 単語 グループ',
       ['除外アイテム1', '除外アイテム2'],
     );

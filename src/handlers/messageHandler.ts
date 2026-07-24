@@ -1,12 +1,20 @@
 import { App } from '@slack/bolt';
-import { ReactionService } from '../services/reactionService';
-import { processCommand } from '../commands/router';
+import type { ProcessCommand } from '../commands/router';
+import type { ReactionOperations } from '../services/reactionService';
+
+export interface MessageHandlerDependencies {
+  processCommand: ProcessCommand;
+  reactionService: ReactionOperations;
+}
 
 /**
  * メッセージイベントハンドラの登録
  * @param app Boltアプリケーションインスタンス
  */
-export const registerMessageHandlers = (app: App): void => {
+export const registerMessageHandlers = (
+  app: App,
+  dependencies: MessageHandlerDependencies,
+): void => {
   // メッセージイベントのリスナー
   app.message(async ({ message, client, logger, say }) => {
     try {
@@ -30,11 +38,11 @@ export const registerMessageHandlers = (app: App): void => {
 
       // DMの場合はコマンド処理を行う
       if (isDM) {
-        await processCommand(message.text, message, say, logger, client);
+        await dependencies.processCommand(message.text, message, say, logger, client);
         return;
       }
 
-      const mappings = ReactionService.findMatchingMappings(message.text);
+      const mappings = dependencies.reactionService.findMatchingMappings(message.text);
 
       if (mappings.length > 0) {
         for (const mapping of mappings) {
@@ -45,7 +53,10 @@ export const registerMessageHandlers = (app: App): void => {
               name: mapping.reaction.replace(/:/g, ''),
             });
 
-            ReactionService.incrementReactionUsage(mapping.triggerText, mapping.reaction);
+            dependencies.reactionService.incrementReactionUsage(
+              mapping.triggerText,
+              mapping.reaction,
+            );
           } catch (error) {
             logger.warn('リアクション追加失敗', {
               reaction: mapping.reaction,

@@ -1,25 +1,33 @@
 import type { Logger } from '@slack/bolt';
 import type { WebClient } from '@slack/web-api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { GroupService } from '../services/groupService';
-import { ReactionService } from '../services/reactionService';
+import type { GroupOperations } from '../services/groupService';
+import type { ReactionOperations } from '../services/reactionService';
 import { GroupCommand } from './groupCommand';
 import { ReactionCommand } from './reactionCommand';
 import { SecretCommand } from './secretCommand';
 import type { CommandContext, SayFunction, SlackEvent } from './types';
 
-vi.mock('../services/groupService', () => ({
-  GroupService: {
-    addItemToGroup: vi.fn(),
-    addItemsToGroup: vi.fn(),
-  },
-}));
+const groupService = {
+  getAllGroups: vi.fn(),
+  createGroup: vi.fn(),
+  deleteGroup: vi.fn(),
+  getItemsByGroupName: vi.fn(),
+  getRandomItemFromGroup: vi.fn(),
+  getRandomItemFromGroupExcluding: vi.fn(),
+  addItemToGroup: vi.fn(),
+  addItemsToGroup: vi.fn(),
+  removeItemFromGroup: vi.fn(),
+  clearGroupItems: vi.fn(),
+} satisfies GroupOperations;
 
-vi.mock('../services/reactionService', () => ({
-  ReactionService: {
-    addReactionMapping: vi.fn(),
-  },
-}));
+const reactionService = {
+  findMatchingMappings: vi.fn(),
+  addReactionMapping: vi.fn(),
+  removeReactionMapping: vi.fn(),
+  getAllReactionMappings: vi.fn(),
+  incrementReactionUsage: vi.fn(),
+} satisfies ReactionOperations;
 
 function createContext(args: string[], invokedName: string): CommandContext {
   return {
@@ -54,12 +62,12 @@ describe('コマンドのエラー伝播', () => {
   });
 
   it('group addのDB失敗を既存文言とスレッド方針付きで伝播する', async () => {
-    vi.mocked(GroupService.addItemToGroup).mockImplementation(() => {
+    groupService.addItemToGroup.mockImplementation(() => {
       throw new Error('db down');
     });
 
     await expect(
-      new GroupCommand().execute(createContext(['add', 'foods', 'ramen'], 'group')),
+      new GroupCommand(groupService).execute(createContext(['add', 'foods', 'ramen'], 'group')),
     ).rejects.toMatchObject({
       userMessage: 'アイテムの追加に失敗しました: db down',
       replyMode: 'message-thread',
@@ -68,13 +76,15 @@ describe('コマンドのエラー伝播', () => {
 
   it('reaction addの入力エラーを既存文言とスレッド方針付きで伝播する', async () => {
     await expect(
-      new ReactionCommand().execute(createContext(['add', '', ':wave:'], 'reaction')),
+      new ReactionCommand(reactionService).execute(
+        createContext(['add', '', ':wave:'], 'reaction'),
+      ),
     ).rejects.toMatchObject({
       userMessage: 'バリデーションエラー: Empty trigger text',
       replyMode: 'message-thread',
     });
 
-    expect(ReactionService.addReactionMapping).not.toHaveBeenCalled();
+    expect(reactionService.addReactionMapping).not.toHaveBeenCalled();
   });
 
   it('secretの入力エラーを共通ValidationErrorとして伝播する', async () => {

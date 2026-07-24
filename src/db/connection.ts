@@ -26,17 +26,6 @@ export const openDatabase = (dbPath: string = defaultDatabasePath()): Database.D
 };
 
 /**
- * 開かれているデータベース接続を取得する
- */
-export const getDatabase = (): Database.Database => {
-  if (!instance) {
-    throw new Error('データベースが初期化されていません。openDatabase()を先に呼び出してください。');
-  }
-
-  return instance;
-};
-
-/**
  * データベース接続を閉じる
  */
 export const closeDatabase = (): void => {
