@@ -3,17 +3,17 @@ import type { WebClient } from '@slack/web-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BOT_MENTION_NAME } from '../config/constants';
 import type { ReactionMapping } from '../models/reactionMapping';
-import { ReactionService } from '../services/reactionService';
+import type { ReactionOperations } from '../services/reactionService';
 import { ReactionCommand } from './reactionCommand';
 import type { CommandContext, SayFunction, SlackEvent } from './types';
 
-vi.mock('../services/reactionService', () => ({
-  ReactionService: {
-    addReactionMapping: vi.fn(),
-    removeReactionMapping: vi.fn(),
-    getAllReactionMappings: vi.fn(),
-  },
-}));
+const reactionService = {
+  findMatchingMappings: vi.fn(),
+  addReactionMapping: vi.fn(),
+  removeReactionMapping: vi.fn(),
+  getAllReactionMappings: vi.fn(),
+  incrementReactionUsage: vi.fn(),
+} satisfies ReactionOperations;
 
 function createContext(
   args: string[],
@@ -82,7 +82,7 @@ describe('ReactionCommand', () => {
   });
 
   it('コマンド情報とヘルプを返す', () => {
-    const command = new ReactionCommand();
+    const command = new ReactionCommand(reactionService);
 
     expect(command.description).toBe(
       'リアクションマッピングを管理します（チャンネルメッセージに自動的にリアクションを追加）',
@@ -103,7 +103,7 @@ describe('ReactionCommand', () => {
   it('サブコマンドがない場合は元メッセージのスレッドへ案内する', async () => {
     const { context, say } = createContext([]);
 
-    await new ReactionCommand().execute(context);
+    await new ReactionCommand(reactionService).execute(context);
 
     expect(say).toHaveBeenCalledWith({
       text: 'サブコマンドを指定してください（export, add, remove）。',
@@ -114,7 +114,7 @@ describe('ReactionCommand', () => {
   it('未知のサブコマンドを小文字化して既存スレッドへ案内する', async () => {
     const { context, say } = createContext(['UNKNOWN'], { thread_ts: '90.000' });
 
-    await new ReactionCommand().execute(context);
+    await new ReactionCommand(reactionService).execute(context);
 
     expect(say).toHaveBeenCalledWith({
       text: '未知のサブコマンド: unknown\n有効なサブコマンド: export, add, remove',
@@ -125,23 +125,23 @@ describe('ReactionCommand', () => {
   it.each(['add', 'remove'])('%sの引数が不足している場合は案内する', async (subCommand) => {
     const { context, say } = createContext([subCommand, 'trigger']);
 
-    await new ReactionCommand().execute(context);
+    await new ReactionCommand(reactionService).execute(context);
 
     expect(say).toHaveBeenCalledWith({
       text: 'トリガーテキストとリアクションを指定してください。',
       thread_ts: '100.000',
     });
-    expect(ReactionService.addReactionMapping).not.toHaveBeenCalled();
-    expect(ReactionService.removeReactionMapping).not.toHaveBeenCalled();
+    expect(reactionService.addReactionMapping).not.toHaveBeenCalled();
+    expect(reactionService.removeReactionMapping).not.toHaveBeenCalled();
   });
 
   it('検証済みトリガーでマッピングを追加する', async () => {
-    vi.mocked(ReactionService.addReactionMapping).mockReturnValue(1);
+    reactionService.addReactionMapping.mockReturnValue(1);
     const { context, say } = createContext(['add', ' hello ', ':wave:']);
 
-    await new ReactionCommand().execute(context);
+    await new ReactionCommand(reactionService).execute(context);
 
-    expect(ReactionService.addReactionMapping).toHaveBeenCalledWith('hello', ':wave:');
+    expect(reactionService.addReactionMapping).toHaveBeenCalledWith('hello', ':wave:');
     expect(say).toHaveBeenCalledWith({
       text: 'リアクションマッピングを追加しました: "hello" → :wave:',
       thread_ts: '100.000',
@@ -151,24 +151,24 @@ describe('ReactionCommand', () => {
   it('addの検証失敗をスレッド返信用ValidationErrorへ変換する', async () => {
     const { context, say } = createContext(['add', '', ':wave:']);
 
-    await expect(new ReactionCommand().execute(context)).rejects.toMatchObject({
+    await expect(new ReactionCommand(reactionService).execute(context)).rejects.toMatchObject({
       name: 'ValidationError',
       message: 'Empty trigger text',
       userMessage: 'バリデーションエラー: Empty trigger text',
       context: { providedText: '' },
       replyMode: 'message-thread',
     });
-    expect(ReactionService.addReactionMapping).not.toHaveBeenCalled();
+    expect(reactionService.addReactionMapping).not.toHaveBeenCalled();
     expect(say).not.toHaveBeenCalled();
   });
 
   it('addのDB失敗をスレッド返信用DatabaseErrorへ変換する', async () => {
-    vi.mocked(ReactionService.addReactionMapping).mockImplementation(() => {
+    reactionService.addReactionMapping.mockImplementation(() => {
       throw new Error('db down');
     });
     const { context, say } = createContext(['add', 'hello', ':wave:']);
 
-    await expect(new ReactionCommand().execute(context)).rejects.toMatchObject({
+    await expect(new ReactionCommand(reactionService).execute(context)).rejects.toMatchObject({
       name: 'DatabaseError',
       message: 'Failed to add reaction mapping',
       userMessage: 'リアクションマッピングの追加に失敗しました: db down',
@@ -183,12 +183,12 @@ describe('ReactionCommand', () => {
   });
 
   it('存在するマッピングを削除する', async () => {
-    vi.mocked(ReactionService.removeReactionMapping).mockReturnValue(true);
+    reactionService.removeReactionMapping.mockReturnValue(true);
     const { context, say } = createContext(['remove', 'hello', ':wave:']);
 
-    await new ReactionCommand().execute(context);
+    await new ReactionCommand(reactionService).execute(context);
 
-    expect(ReactionService.removeReactionMapping).toHaveBeenCalledWith('hello', ':wave:');
+    expect(reactionService.removeReactionMapping).toHaveBeenCalledWith('hello', ':wave:');
     expect(say).toHaveBeenCalledWith({
       text: 'リアクションマッピングを削除しました: "hello" → :wave:',
       thread_ts: '100.000',
@@ -196,10 +196,10 @@ describe('ReactionCommand', () => {
   });
 
   it('存在しないマッピングの削除を案内する', async () => {
-    vi.mocked(ReactionService.removeReactionMapping).mockReturnValue(false);
+    reactionService.removeReactionMapping.mockReturnValue(false);
     const { context, say } = createContext(['remove', 'missing', ':eyes:']);
 
-    await new ReactionCommand().execute(context);
+    await new ReactionCommand(reactionService).execute(context);
 
     expect(say).toHaveBeenCalledWith({
       text: 'リアクションマッピング "missing" → :eyes: は存在しません。',
@@ -208,22 +208,22 @@ describe('ReactionCommand', () => {
   });
 
   it('removeのDB失敗は現在のサービスエラーをそのまま伝播する', async () => {
-    vi.mocked(ReactionService.removeReactionMapping).mockImplementation(() => {
+    reactionService.removeReactionMapping.mockImplementation(() => {
       throw new Error('db down');
     });
     const { context, say } = createContext(['remove', 'hello', ':wave:']);
 
-    await expect(new ReactionCommand().execute(context)).rejects.toThrow('db down');
+    await expect(new ReactionCommand(reactionService).execute(context)).rejects.toThrow('db down');
     expect(say).not.toHaveBeenCalled();
   });
 
   it('マッピングが0件の場合はファイルをアップロードせず案内する', async () => {
-    vi.mocked(ReactionService.getAllReactionMappings).mockReturnValue([]);
+    reactionService.getAllReactionMappings.mockReturnValue([]);
     const { context, say, uploadV2 } = createContext(['export']);
 
-    await new ReactionCommand().execute(context);
+    await new ReactionCommand(reactionService).execute(context);
 
-    expect(ReactionService.getAllReactionMappings).toHaveBeenCalledOnce();
+    expect(reactionService.getAllReactionMappings).toHaveBeenCalledOnce();
     expect(uploadV2).not.toHaveBeenCalled();
     expect(say).toHaveBeenCalledWith({
       text: 'エクスポートするリアクションマッピングはありません。',
@@ -234,12 +234,12 @@ describe('ReactionCommand', () => {
   it('CSVを日時付きファイル名で既存スレッドへアップロードする', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-25T01:02:03.456Z'));
-    vi.mocked(ReactionService.getAllReactionMappings).mockReturnValue([
+    reactionService.getAllReactionMappings.mockReturnValue([
       mapping({ triggerText: 'hello,world' }),
     ]);
     const { context, say, uploadV2 } = createContext(['export'], { thread_ts: '90.000' });
 
-    await new ReactionCommand().execute(context);
+    await new ReactionCommand(reactionService).execute(context);
 
     const csv =
       'ID,トリガーテキスト,リアクション,使用回数,作成日時,更新日時\n' +
@@ -262,10 +262,10 @@ describe('ReactionCommand', () => {
   it('チャンネル直下のexportも元メッセージのtsをアップロード先スレッドにする', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-25T01:02:03.456Z'));
-    vi.mocked(ReactionService.getAllReactionMappings).mockReturnValue([mapping()]);
+    reactionService.getAllReactionMappings.mockReturnValue([mapping()]);
     const { context, uploadV2 } = createContext(['export']);
 
-    await new ReactionCommand().execute(context);
+    await new ReactionCommand(reactionService).execute(context);
 
     expect(uploadV2).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -276,11 +276,11 @@ describe('ReactionCommand', () => {
   });
 
   it('アップロード失敗をスレッド返信用SlackAPIErrorへ変換する', async () => {
-    vi.mocked(ReactionService.getAllReactionMappings).mockReturnValue([mapping()]);
+    reactionService.getAllReactionMappings.mockReturnValue([mapping()]);
     const { context, say, uploadV2 } = createContext(['export']);
     uploadV2.mockRejectedValue(new Error('slack down'));
 
-    await expect(new ReactionCommand().execute(context)).rejects.toMatchObject({
+    await expect(new ReactionCommand(reactionService).execute(context)).rejects.toMatchObject({
       name: 'SlackAPIError',
       message: 'Failed to export reaction mappings',
       userMessage: 'リアクションマッピングのエクスポートに失敗しました: slack down',

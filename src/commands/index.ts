@@ -1,3 +1,5 @@
+import type { GroupOperations } from '../services/groupService';
+import type { ReactionOperations } from '../services/reactionService';
 import { ChoiceCommand } from './choiceCommand';
 import { DefaultCommand } from './defaultCommand';
 import { DiceCommand } from './diceCommand';
@@ -26,76 +28,15 @@ export interface CommandResolution {
   invokedName: string;
 }
 
-const registrations: CommandRegistration[] = [];
-const helpCommand = new HelpCommand(() => registrations);
-const choiceCommand = new ChoiceCommand();
-const groupChoiceCommand = new GroupChoiceCommand();
-const reactionCommand = new ReactionCommand();
-const groupCommand = new GroupCommand();
-const diceCommand = new DiceCommand();
-const zakoSecretCommand = new ZakoSecretCommand();
-const secretCommand = new SecretCommand();
-const shuffleCommand = new ShuffleCommand();
-const groupShuffleCommand = new GroupShuffleCommand();
-const defaultCommand = new DefaultCommand();
+export interface CommandDependencies {
+  groupService: GroupOperations;
+  reactionService: ReactionOperations;
+}
 
-registrations.push(
-  {
-    command: helpCommand,
-    primaryName: 'help',
-    aliases: [],
-  },
-  {
-    command: choiceCommand,
-    primaryName: 'choice',
-    aliases: [],
-  },
-  {
-    command: groupChoiceCommand,
-    primaryName: 'groupChoice',
-    aliases: ['gc', 'group-choice', 'gchoice'],
-    displayName: 'gc',
-  },
-  {
-    command: reactionCommand,
-    primaryName: 'reaction',
-    aliases: [],
-  },
-  {
-    command: groupCommand,
-    primaryName: 'group',
-    aliases: [],
-  },
-  {
-    command: diceCommand,
-    primaryName: 'dice',
-    aliases: [],
-    helpExampleIndexes: [0, 2],
-  },
-  {
-    command: zakoSecretCommand,
-    primaryName: 'zako-secret',
-    aliases: [],
-    dmOnly: true,
-  },
-  {
-    command: secretCommand,
-    primaryName: 'secret',
-    aliases: [],
-    dmOnly: true,
-  },
-  {
-    command: shuffleCommand,
-    primaryName: 'shuffle',
-    aliases: [],
-  },
-  {
-    command: groupShuffleCommand,
-    primaryName: 'groupShuffle',
-    aliases: ['gs', 'group-shuffle', 'gshuffle'],
-    displayName: 'gs',
-  },
-);
+export interface CommandRegistry {
+  commandRegistrations: readonly CommandRegistration[];
+  resolveCommand(commandName: string): CommandResolution;
+}
 
 function normalizeCommandName(name: string): string {
   return name.toLowerCase();
@@ -119,31 +60,98 @@ function buildRegistrationMap(
   return map;
 }
 
-const commandRegistrations: readonly CommandRegistration[] = Object.freeze(registrations);
-const registrationMap = buildRegistrationMap(commandRegistrations);
-const diceRegistration = registrationMap.get('dice');
-
 function isDiceCode(text: string): boolean {
   return /^\d+d\d+$/i.test(text);
 }
 
-export function resolveCommand(commandName: string): CommandResolution {
-  const invokedName = normalizeCommandName(commandName);
+/**
+ * 依存関係を注入したコマンド登録情報と解決関数を作成する。
+ */
+export function createCommandRegistry(dependencies: CommandDependencies): CommandRegistry {
+  let registrations: readonly CommandRegistration[] = [];
+  const helpCommand = new HelpCommand(() => registrations);
 
-  if (isDiceCode(invokedName) && diceRegistration) {
-    return {
-      command: diceRegistration.command,
-      registration: diceRegistration,
-      invokedName,
-    };
-  }
+  registrations = Object.freeze([
+    {
+      command: helpCommand,
+      primaryName: 'help',
+      aliases: [],
+    },
+    {
+      command: new ChoiceCommand(),
+      primaryName: 'choice',
+      aliases: [],
+    },
+    {
+      command: new GroupChoiceCommand(dependencies.groupService),
+      primaryName: 'groupChoice',
+      aliases: ['gc', 'group-choice', 'gchoice'],
+      displayName: 'gc',
+    },
+    {
+      command: new ReactionCommand(dependencies.reactionService),
+      primaryName: 'reaction',
+      aliases: [],
+    },
+    {
+      command: new GroupCommand(dependencies.groupService),
+      primaryName: 'group',
+      aliases: [],
+    },
+    {
+      command: new DiceCommand(),
+      primaryName: 'dice',
+      aliases: [],
+      helpExampleIndexes: [0, 2],
+    },
+    {
+      command: new ZakoSecretCommand(),
+      primaryName: 'zako-secret',
+      aliases: [],
+      dmOnly: true,
+    },
+    {
+      command: new SecretCommand(),
+      primaryName: 'secret',
+      aliases: [],
+      dmOnly: true,
+    },
+    {
+      command: new ShuffleCommand(),
+      primaryName: 'shuffle',
+      aliases: [],
+    },
+    {
+      command: new GroupShuffleCommand(dependencies.groupService),
+      primaryName: 'groupShuffle',
+      aliases: ['gs', 'group-shuffle', 'gshuffle'],
+      displayName: 'gs',
+    },
+  ] satisfies CommandRegistration[]);
 
-  const registration = registrationMap.get(invokedName);
+  const registrationMap = buildRegistrationMap(registrations);
+  const diceRegistration = registrationMap.get('dice');
+  const defaultCommand = new DefaultCommand();
+
   return {
-    command: registration?.command ?? defaultCommand,
-    registration,
-    invokedName,
+    commandRegistrations: registrations,
+    resolveCommand(commandName: string): CommandResolution {
+      const invokedName = normalizeCommandName(commandName);
+
+      if (isDiceCode(invokedName) && diceRegistration) {
+        return {
+          command: diceRegistration.command,
+          registration: diceRegistration,
+          invokedName,
+        };
+      }
+
+      const registration = registrationMap.get(invokedName);
+      return {
+        command: registration?.command ?? defaultCommand,
+        registration,
+        invokedName,
+      };
+    },
   };
 }
-
-export { commandRegistrations };

@@ -1,20 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { App } from '@slack/bolt';
-
-vi.mock('../commands/router', () => ({
-  processCommand: vi.fn(),
-}));
-
-vi.mock('../services/reactionService', () => ({
-  ReactionService: {
-    findMatchingMappings: vi.fn(),
-    incrementReactionUsage: vi.fn(),
-  },
-}));
-
-import { ReactionService } from '../services/reactionService';
-import { processCommand } from '../commands/router';
+import type { ProcessCommand } from '../commands/router';
+import type { ReactionOperations } from '../services/reactionService';
 import { registerMessageHandlers } from './messageHandler';
+
+const processCommand = vi.fn<ProcessCommand>();
+const reactionService = {
+  findMatchingMappings: vi.fn(),
+  addReactionMapping: vi.fn(),
+  removeReactionMapping: vi.fn(),
+  getAllReactionMappings: vi.fn(),
+  incrementReactionUsage: vi.fn(),
+} satisfies ReactionOperations;
 
 describe('registerMessageHandlers', () => {
   let listener: (args: Record<string, unknown>) => Promise<void>;
@@ -35,8 +32,8 @@ describe('registerMessageHandlers', () => {
     client = { reactions: { add: vi.fn().mockResolvedValue({ ok: true }) } };
     logger = { error: vi.fn(), warn: vi.fn() };
     say = vi.fn().mockResolvedValue({ ok: true });
-    vi.mocked(ReactionService.findMatchingMappings).mockReturnValue([]);
-    registerMessageHandlers(app);
+    reactionService.findMatchingMappings.mockReturnValue([]);
+    registerMessageHandlers(app, { processCommand, reactionService });
   });
 
   it('subtype付きメッセージを無視する', async () => {
@@ -52,7 +49,7 @@ describe('registerMessageHandlers', () => {
       say,
     });
 
-    expect(ReactionService.findMatchingMappings).not.toHaveBeenCalled();
+    expect(reactionService.findMatchingMappings).not.toHaveBeenCalled();
   });
 
   it('textのないメッセージを無視する', async () => {
@@ -63,7 +60,7 @@ describe('registerMessageHandlers', () => {
       say,
     });
 
-    expect(ReactionService.findMatchingMappings).not.toHaveBeenCalled();
+    expect(reactionService.findMatchingMappings).not.toHaveBeenCalled();
   });
 
   it('DMメッセージをコマンド処理へ委譲する', async () => {
@@ -81,11 +78,11 @@ describe('registerMessageHandlers', () => {
     await listener({ message, client, logger, say });
 
     expect(processCommand).toHaveBeenCalledWith('choice a b', message, say, logger, client);
-    expect(ReactionService.findMatchingMappings).not.toHaveBeenCalled();
+    expect(reactionService.findMatchingMappings).not.toHaveBeenCalled();
   });
 
   it('チャンネルメッセージへ一意なリアクションを追加して使用回数を更新する', async () => {
-    vi.mocked(ReactionService.findMatchingMappings).mockReturnValue([
+    reactionService.findMatchingMappings.mockReturnValue([
       {
         id: 1,
         triggerText: 'hello',
@@ -128,12 +125,12 @@ describe('registerMessageHandlers', () => {
       timestamp: '100.000',
       name: 'smile',
     });
-    expect(ReactionService.incrementReactionUsage).toHaveBeenCalledWith('hello', ':wave:');
-    expect(ReactionService.incrementReactionUsage).toHaveBeenCalledWith('world', ':smile:');
+    expect(reactionService.incrementReactionUsage).toHaveBeenCalledWith('hello', ':wave:');
+    expect(reactionService.incrementReactionUsage).toHaveBeenCalledWith('world', ':smile:');
   });
 
   it('リアクション追加失敗後も残りのリアクションを処理する', async () => {
-    vi.mocked(ReactionService.findMatchingMappings).mockReturnValue([
+    reactionService.findMatchingMappings.mockReturnValue([
       {
         id: 1,
         triggerText: 'hello',
@@ -171,7 +168,7 @@ describe('registerMessageHandlers', () => {
 
     expect(client.reactions.add).toHaveBeenCalledTimes(2);
     expect(logger.warn).toHaveBeenCalled();
-    expect(ReactionService.incrementReactionUsage).toHaveBeenCalledTimes(1);
-    expect(ReactionService.incrementReactionUsage).toHaveBeenCalledWith('hello', ':smile:');
+    expect(reactionService.incrementReactionUsage).toHaveBeenCalledTimes(1);
+    expect(reactionService.incrementReactionUsage).toHaveBeenCalledWith('hello', ':smile:');
   });
 });

@@ -3,23 +3,23 @@ import type { WebClient } from '@slack/web-api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BOT_MENTION_NAME } from '../config/constants';
 import type { Group, GroupItem } from '../models/group';
-import { GroupService } from '../services/groupService';
+import type { GroupOperations } from '../services/groupService';
 import { DatabaseError, ValidationError } from '../utils/errors';
 import { GroupCommand } from './groupCommand';
 import type { CommandContext, SayFunction, SlackEvent } from './types';
 
-vi.mock('../services/groupService', () => ({
-  GroupService: {
-    getAllGroups: vi.fn(),
-    createGroup: vi.fn(),
-    deleteGroup: vi.fn(),
-    getItemsByGroupName: vi.fn(),
-    addItemToGroup: vi.fn(),
-    addItemsToGroup: vi.fn(),
-    removeItemFromGroup: vi.fn(),
-    clearGroupItems: vi.fn(),
-  },
-}));
+const groupService = {
+  getAllGroups: vi.fn(),
+  createGroup: vi.fn(),
+  deleteGroup: vi.fn(),
+  getItemsByGroupName: vi.fn(),
+  getRandomItemFromGroup: vi.fn(),
+  getRandomItemFromGroupExcluding: vi.fn(),
+  addItemToGroup: vi.fn(),
+  addItemsToGroup: vi.fn(),
+  removeItemFromGroup: vi.fn(),
+  clearGroupItems: vi.fn(),
+} satisfies GroupOperations;
 
 const ts = '100.000';
 const threadTs = '99.000';
@@ -56,7 +56,7 @@ function createContext(args: string[], eventThreadTs?: string): CommandContext {
 
 async function execute(args: string[], eventThreadTs?: string): Promise<CommandContext> {
   const context = createContext(args, eventThreadTs);
-  await new GroupCommand().execute(context);
+  await new GroupCommand(groupService).execute(context);
   return context;
 }
 
@@ -68,7 +68,7 @@ describe('GroupCommand', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('ヘルプテキストにすべてのサブコマンドを含める', () => {
-    expect(new GroupCommand().getHelpText('group')).toBe(
+    expect(new GroupCommand(groupService).getHelpText('group')).toBe(
       '*group* - グループを管理します\n' +
         `  - \`${BOT_MENTION_NAME} group list\` - すべてのグループを表示\n` +
         `  - \`${BOT_MENTION_NAME} group create グループ名\` - 新しいグループを作成\n` +
@@ -92,9 +92,9 @@ describe('GroupCommand', () => {
   });
 
   it('listは空と一覧を応答し、スレッドTSを使う', async () => {
-    vi.mocked(GroupService.getAllGroups).mockReturnValue([]);
+    groupService.getAllGroups.mockReturnValue([]);
     expectReply(await execute(['list'], threadTs), 'グループはありません。', threadTs);
-    vi.mocked(GroupService.getAllGroups).mockReturnValue([
+    groupService.getAllGroups.mockReturnValue([
       { id: 1, name: '昼食', createdAt: '', updatedAt: '' } as Group,
     ]);
     expectReply(await execute(['list']), '*グループ一覧:*\n昼食');
@@ -102,18 +102,22 @@ describe('GroupCommand', () => {
 
   it('listのserviceエラーはそのまま伝播する', async () => {
     const error = new Error('list failed');
-    vi.mocked(GroupService.getAllGroups).mockImplementation(() => {
+    groupService.getAllGroups.mockImplementation(() => {
       throw error;
     });
-    await expect(new GroupCommand().execute(createContext(['list']))).rejects.toBe(error);
+    await expect(new GroupCommand(groupService).execute(createContext(['list']))).rejects.toBe(
+      error,
+    );
   });
 
   it('createは入力不足、成功、validation失敗を処理する', async () => {
     expectReply(await execute(['create']), 'グループ名を指定してください。');
     const context = await execute(['create', ' 昼食 ']);
-    expect(GroupService.createGroup).toHaveBeenCalledWith('昼食');
+    expect(groupService.createGroup).toHaveBeenCalledWith('昼食');
     expectReply(context, 'グループ "昼食" を作成しました。');
-    await expect(new GroupCommand().execute(createContext(['create', ' ']))).rejects.toMatchObject({
+    await expect(
+      new GroupCommand(groupService).execute(createContext(['create', ' '])),
+    ).rejects.toMatchObject({
       name: 'ValidationError',
       message: 'Empty group name',
       userMessage: 'グループ名を入力してください',
@@ -122,11 +126,11 @@ describe('GroupCommand', () => {
   });
 
   it('createのserviceエラーはDatabaseErrorでラップする', async () => {
-    vi.mocked(GroupService.createGroup).mockImplementation(() => {
+    groupService.createGroup.mockImplementation(() => {
       throw new Error('duplicate');
     });
     await expect(
-      new GroupCommand().execute(createContext(['create', '昼食'])),
+      new GroupCommand(groupService).execute(createContext(['create', '昼食'])),
     ).rejects.toMatchObject({
       name: 'DatabaseError',
       message: 'Failed to create group',
@@ -138,14 +142,14 @@ describe('GroupCommand', () => {
 
   it('deleteは入力不足、成功、対象なしを処理する', async () => {
     expectReply(await execute(['delete']), 'グループ名を指定してください。');
-    vi.mocked(GroupService.deleteGroup).mockReturnValueOnce(true).mockReturnValueOnce(false);
+    groupService.deleteGroup.mockReturnValueOnce(true).mockReturnValueOnce(false);
     expectReply(await execute(['delete', '昼食']), 'グループ "昼食" を削除しました。');
     expectReply(await execute(['delete', 'なし']), 'グループ "なし" は存在しません。');
   });
 
   it('itemsは入力不足、空、一覧を処理する', async () => {
     expectReply(await execute(['items']), 'グループ名を指定してください。');
-    vi.mocked(GroupService.getItemsByGroupName)
+    groupService.getItemsByGroupName
       .mockReturnValueOnce([])
       .mockReturnValueOnce([{ id: 1, groupId: 1, itemText: 'うどん', createdAt: '' } as GroupItem]);
     expectReply(await execute(['items', '昼食']), 'グループ "昼食" にはアイテムがありません。');
@@ -157,45 +161,45 @@ describe('GroupCommand', () => {
       await execute(['add', '昼食']),
       'グループ名と1つ以上のアイテムを指定してください。複数のアイテムを一度に追加することもできます。',
     );
-    vi.mocked(GroupService.addItemToGroup).mockReturnValueOnce(1).mockReturnValueOnce(undefined);
+    groupService.addItemToGroup.mockReturnValueOnce(1).mockReturnValueOnce(undefined);
     expectReply(
       await execute(['add', '昼食', 'ラーメン']),
       'グループ "昼食" にアイテム "ラーメン" を追加しました。',
     );
-    expect(GroupService.addItemToGroup).toHaveBeenLastCalledWith('昼食', 'ラーメン');
+    expect(groupService.addItemToGroup).toHaveBeenLastCalledWith('昼食', 'ラーメン');
     expectReply(await execute(['add', 'なし', 'ラーメン']), 'グループ "なし" は存在しません。');
   });
 
   it('addは複数アイテムを空白で分割して一括追加する', async () => {
-    vi.mocked(GroupService.addItemsToGroup).mockReturnValue([1, 2]);
+    groupService.addItemsToGroup.mockReturnValue([1, 2]);
     const context = await execute(['add', '昼食', 'ラーメン', 'うどん']);
-    expect(GroupService.addItemsToGroup).toHaveBeenCalledWith('昼食', ['ラーメン', 'うどん']);
+    expect(groupService.addItemsToGroup).toHaveBeenCalledWith('昼食', ['ラーメン', 'うどん']);
     expectReply(context, 'グループ "昼食" に 2 個のアイテムを追加しました：\nラーメン\nうどん');
   });
 
   it('複数アイテムの追加対象がない場合を案内する', async () => {
-    vi.mocked(GroupService.addItemsToGroup).mockReturnValue([]);
+    groupService.addItemsToGroup.mockReturnValue([]);
 
     const context = await execute(['add', 'なし', 'ラーメン', 'うどん']);
 
-    expect(GroupService.addItemsToGroup).toHaveBeenCalledWith('なし', ['ラーメン', 'うどん']);
+    expect(groupService.addItemsToGroup).toHaveBeenCalledWith('なし', ['ラーメン', 'うどん']);
     expectReply(context, 'グループ "なし" は存在しません。');
   });
 
   it('addのvalidation失敗とservice失敗は現行のエラー型で伝播する', async () => {
     await expect(
-      new GroupCommand().execute(createContext(['add', '昼食', 'x'.repeat(201)])),
+      new GroupCommand(groupService).execute(createContext(['add', '昼食', 'x'.repeat(201)])),
     ).rejects.toMatchObject({
       name: 'ValidationError',
       replyMode: 'message-thread',
       userMessage:
         'アイテム "' + 'x'.repeat(201) + '" のバリデーションエラー: Item text too long: 201 chars',
     });
-    vi.mocked(GroupService.addItemToGroup).mockImplementation(() => {
+    groupService.addItemToGroup.mockImplementation(() => {
       throw new Error('db down');
     });
     await expect(
-      new GroupCommand().execute(createContext(['add', '昼食', 'ラーメン'])),
+      new GroupCommand(groupService).execute(createContext(['add', '昼食', 'ラーメン'])),
     ).rejects.toMatchObject({
       name: 'DatabaseError',
       message: 'Failed to add group items',
@@ -211,14 +215,12 @@ describe('GroupCommand', () => {
 
   it('removeは入力不足、成功、対象なしを処理する', async () => {
     expectReply(await execute(['remove', '昼食']), 'グループ名とアイテムを指定してください。');
-    vi.mocked(GroupService.removeItemFromGroup)
-      .mockReturnValueOnce(true)
-      .mockReturnValueOnce(false);
+    groupService.removeItemFromGroup.mockReturnValueOnce(true).mockReturnValueOnce(false);
     expectReply(
       await execute(['remove', '昼食', '焼き', 'そば']),
       'グループ "昼食" からアイテム "焼き そば" を削除しました。',
     );
-    expect(GroupService.removeItemFromGroup).toHaveBeenLastCalledWith('昼食', '焼き そば');
+    expect(groupService.removeItemFromGroup).toHaveBeenLastCalledWith('昼食', '焼き そば');
     expectReply(
       await execute(['remove', '昼食', 'なし']),
       'グループ "昼食" またはアイテム "なし" は存在しません。',
@@ -227,7 +229,7 @@ describe('GroupCommand', () => {
 
   it('clearは入力不足、成功、対象なしを処理する', async () => {
     expectReply(await execute(['clear']), 'グループ名を指定してください。');
-    vi.mocked(GroupService.clearGroupItems).mockReturnValueOnce(true).mockReturnValueOnce(false);
+    groupService.clearGroupItems.mockReturnValueOnce(true).mockReturnValueOnce(false);
     expectReply(
       await execute(['clear', '昼食']),
       'グループ "昼食" のすべてのアイテムを削除しました。',
@@ -237,38 +239,44 @@ describe('GroupCommand', () => {
 
   it('deleteのserviceエラーはラップせずそのまま伝播する', async () => {
     const error = new Error('delete failed');
-    vi.mocked(GroupService.deleteGroup).mockImplementation(() => {
+    groupService.deleteGroup.mockImplementation(() => {
       throw error;
     });
-    await expect(new GroupCommand().execute(createContext(['delete', '昼食']))).rejects.toBe(error);
+    await expect(
+      new GroupCommand(groupService).execute(createContext(['delete', '昼食'])),
+    ).rejects.toBe(error);
   });
 
   it('itemsのserviceエラーはラップせずそのまま伝播する', async () => {
     const error = new Error('items failed');
-    vi.mocked(GroupService.getItemsByGroupName).mockImplementation(() => {
-      throw error;
-    });
-
-    await expect(new GroupCommand().execute(createContext(['items', '昼食']))).rejects.toBe(error);
-  });
-
-  it('removeのserviceエラーはラップせずそのまま伝播する', async () => {
-    const error = new Error('remove failed');
-    vi.mocked(GroupService.removeItemFromGroup).mockImplementation(() => {
+    groupService.getItemsByGroupName.mockImplementation(() => {
       throw error;
     });
 
     await expect(
-      new GroupCommand().execute(createContext(['remove', '昼食', 'ラーメン'])),
+      new GroupCommand(groupService).execute(createContext(['items', '昼食'])),
+    ).rejects.toBe(error);
+  });
+
+  it('removeのserviceエラーはラップせずそのまま伝播する', async () => {
+    const error = new Error('remove failed');
+    groupService.removeItemFromGroup.mockImplementation(() => {
+      throw error;
+    });
+
+    await expect(
+      new GroupCommand(groupService).execute(createContext(['remove', '昼食', 'ラーメン'])),
     ).rejects.toBe(error);
   });
 
   it('clearのserviceエラーはラップせずそのまま伝播する', async () => {
     const error = new Error('clear failed');
-    vi.mocked(GroupService.clearGroupItems).mockImplementation(() => {
+    groupService.clearGroupItems.mockImplementation(() => {
       throw error;
     });
 
-    await expect(new GroupCommand().execute(createContext(['clear', '昼食']))).rejects.toBe(error);
+    await expect(
+      new GroupCommand(groupService).execute(createContext(['clear', '昼食'])),
+    ).rejects.toBe(error);
   });
 });

@@ -1,20 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { App, Logger } from '@slack/bolt';
 import type { WebClient } from '@slack/web-api';
+import { createCommandRouter, type ProcessCommand, type ResolveCommand } from '../commands/router';
 import type { Command, SayFunction, SlackEvent } from '../commands/types';
-
-vi.mock('../commands', () => ({
-  resolveCommand: vi.fn(),
-}));
 
 vi.mock('../utils/errorHandler', () => ({
   handleCommandError: vi.fn(),
   logCommandSuccess: vi.fn(),
 }));
 
-import { resolveCommand } from '../commands';
 import { handleCommandError, logCommandSuccess } from '../utils/errorHandler';
-import { processCommand } from '../commands/router';
 import { registerMentionHandlers } from './mentionHandler';
 
 const createCommand = (execute = vi.fn().mockResolvedValue(undefined)): Command => ({
@@ -46,13 +41,17 @@ const createEvent = (overrides: Partial<SlackEvent> = {}): SlackEvent =>
     ...overrides,
   }) as SlackEvent;
 
-describe('processCommand', () => {
+describe('createCommandRouter', () => {
+  let resolveCommand: ReturnType<typeof vi.fn<ResolveCommand>>;
+  let processCommand: ProcessCommand;
   let say: SayFunction;
   let logger: Logger;
   let client: WebClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    resolveCommand = vi.fn<ResolveCommand>();
+    processCommand = createCommandRouter(resolveCommand);
     say = vi.fn().mockResolvedValue({ ok: true });
     logger = createLogger();
     client = {} as WebClient;
@@ -60,10 +59,7 @@ describe('processCommand', () => {
 
   it('コマンド名と引数を解析してコマンドを実行する', async () => {
     const command = createCommand();
-    vi.mocked(resolveCommand).mockReturnValue({
-      command,
-      invokedName: 'choice',
-    });
+    resolveCommand.mockReturnValue({ command, invokedName: 'choice' });
     const event = createEvent();
 
     await processCommand('choice a b', event, say, logger, client);
@@ -88,12 +84,9 @@ describe('processCommand', () => {
     );
   });
 
-  it('空文字列は空のコマンド名として既存ルータへ渡す', async () => {
+  it('空文字列は空のコマンド名として解決する', async () => {
     const command = createCommand();
-    vi.mocked(resolveCommand).mockReturnValue({
-      command,
-      invokedName: '',
-    });
+    resolveCommand.mockReturnValue({ command, invokedName: '' });
 
     await processCommand('', createEvent(), say, logger, client);
 
@@ -103,7 +96,7 @@ describe('processCommand', () => {
 
   it('DM専用コマンドをチャンネルでは拒否する', async () => {
     const command = createCommand();
-    vi.mocked(resolveCommand).mockReturnValue({
+    resolveCommand.mockReturnValue({
       command,
       invokedName: 'secret',
       registration: {
@@ -124,7 +117,7 @@ describe('processCommand', () => {
 
   it('DM専用コマンドをDMでは実行する', async () => {
     const command = createCommand();
-    vi.mocked(resolveCommand).mockReturnValue({
+    resolveCommand.mockReturnValue({
       command,
       invokedName: 'secret',
       registration: {
@@ -149,10 +142,7 @@ describe('processCommand', () => {
   it('コマンド例外を共通エラーハンドラへ渡す', async () => {
     const error = new Error('boom');
     const command = createCommand(vi.fn().mockRejectedValue(error));
-    vi.mocked(resolveCommand).mockReturnValue({
-      command,
-      invokedName: 'choice',
-    });
+    resolveCommand.mockReturnValue({ command, invokedName: 'choice' });
 
     await processCommand('choice a b', createEvent(), say, logger, client);
 
@@ -162,21 +152,13 @@ describe('processCommand', () => {
 });
 
 describe('registerMentionHandlers', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it.each([
     ['C123', 'channel'],
     ['D123', 'im'],
     ['G123', 'group'],
     ['X123', 'channel'],
   ] as const)('チャンネルID %s を %s として正規化する', async (channel, channelType) => {
-    const command = createCommand();
-    vi.mocked(resolveCommand).mockReturnValue({
-      command,
-      invokedName: 'choice',
-    });
+    const processCommand = vi.fn<ProcessCommand>();
     let listener: ((args: Record<string, unknown>) => Promise<void>) | undefined;
     const app = {
       event: vi.fn((_name: string, callback: (args: Record<string, unknown>) => Promise<void>) => {
@@ -187,7 +169,7 @@ describe('registerMentionHandlers', () => {
     const logger = createLogger();
     const client = {} as WebClient;
 
-    registerMentionHandlers(app);
+    registerMentionHandlers(app, { processCommand });
     await listener?.({
       event: {
         type: 'app_mention',
@@ -202,16 +184,16 @@ describe('registerMentionHandlers', () => {
       client,
     });
 
-    expect(resolveCommand).toHaveBeenCalledWith('choice');
-    expect(command.execute).toHaveBeenCalledWith(
+    expect(processCommand).toHaveBeenCalledWith(
+      'choice a b',
       expect.objectContaining({
-        event: expect.objectContaining({
-          channel,
-          channel_type: channelType,
-          text: '<@UBOT> choice a b',
-        }),
-        args: ['a', 'b'],
+        channel,
+        channel_type: channelType,
+        text: '<@UBOT> choice a b',
       }),
+      say,
+      logger,
+      client,
     );
   });
 });

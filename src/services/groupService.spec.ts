@@ -1,297 +1,135 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GroupService } from './groupService';
-import { GroupModel, GroupItemModel } from '../models/group';
-import { getRandomItem } from '../utils/random';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { GroupItem } from '../models/group';
+import type { GroupRepository } from '../repositories/sqliteGroupRepository';
+import { GroupService, type RandomItemPicker } from './groupService';
 
-// GroupModelとGroupItemModelのモック
-vi.mock('../models/group', () => {
-  return {
-    GroupModel: {
-      getAll: vi.fn(),
-      getByName: vi.fn(),
-      create: vi.fn(),
-      delete: vi.fn(),
-      deleteByName: vi.fn(),
-    },
-    GroupItemModel: {
-      getAllByGroupId: vi.fn(),
-      getAllByGroupName: vi.fn(),
-      create: vi.fn(),
-      delete: vi.fn(),
-      deleteAllByGroupId: vi.fn(),
-      deleteByGroupNameAndItemText: vi.fn(),
-    },
-  };
-});
+const repository = {
+  getAllGroups: vi.fn(),
+  getGroupByName: vi.fn(),
+  createGroup: vi.fn(),
+  deleteGroupByName: vi.fn(),
+  getItemsByGroupName: vi.fn(),
+  createItem: vi.fn(),
+  createItems: vi.fn(),
+  deleteAllItemsByGroupId: vi.fn(),
+  deleteItemByGroupNameAndText: vi.fn(),
+} satisfies GroupRepository;
 
-// データベースのモック
-const { mockDb } = vi.hoisted(() => ({
-  mockDb: {
-    transaction: vi.fn().mockImplementation((fn) => {
-      return () => fn();
-    }),
-  },
-}));
+const pickRandomItemMock = vi.fn();
+const pickRandomItem: RandomItemPicker = <T>(items: T[]): T | undefined =>
+  pickRandomItemMock(items) as T | undefined;
 
-vi.mock('../db/connection', () => ({
-  getDatabase: () => mockDb,
-}));
+const group = {
+  id: 1,
+  name: '昼食',
+  createdAt: '2026-01-01',
+  updatedAt: '2026-01-01',
+};
 
-// getRandomItemのモック
-vi.mock('../utils/random', () => {
-  return {
-    getRandomItem: vi.fn(),
-  };
+const item = (itemText: string): GroupItem => ({
+  id: 1,
+  groupId: group.id,
+  itemText,
+  createdAt: '2026-01-01',
 });
 
 describe('GroupService', () => {
+  let service: GroupService;
+
   beforeEach(() => {
-    // モックをリセット
     vi.clearAllMocks();
+    pickRandomItemMock.mockImplementation((items: unknown[]) => items[0]);
+    service = new GroupService(repository, pickRandomItem);
   });
 
-  describe('addItemToGroup', () => {
-    it('グループが存在しない場合はundefinedを返すこと', () => {
-      // GroupModel.getByNameがundefinedを返すようにモック
-      vi.mocked(GroupModel.getByName).mockReturnValue(undefined);
+  it('一覧・削除・アイテム取得をRepositoryへ委譲する', () => {
+    repository.getAllGroups.mockReturnValue([group]);
+    repository.deleteGroupByName.mockReturnValue(true);
+    repository.getItemsByGroupName.mockReturnValue([item('ラーメン')]);
 
-      // メソッドを実行
-      const result = GroupService.addItemToGroup('存在しないグループ', 'アイテム');
-
-      // 期待する結果を検証
-      expect(GroupModel.getByName).toHaveBeenCalledWith('存在しないグループ');
-      expect(GroupItemModel.create).not.toHaveBeenCalled();
-      expect(result).toBeUndefined();
-    });
-
-    it('グループが存在する場合はアイテムを追加してIDを返すこと', () => {
-      // GroupModel.getByNameがグループを返すようにモック
-      vi.mocked(GroupModel.getByName).mockReturnValue({
-        id: 1,
-        name: 'テストグループ',
-        createdAt: '2023-01-01',
-        updatedAt: '2023-01-01',
-      });
-
-      // GroupItemModel.createが1を返すようにモック
-      vi.mocked(GroupItemModel.create).mockReturnValue(1);
-
-      // メソッドを実行
-      const result = GroupService.addItemToGroup('テストグループ', 'アイテム');
-
-      // 期待する結果を検証
-      expect(GroupModel.getByName).toHaveBeenCalledWith('テストグループ');
-      expect(GroupItemModel.create).toHaveBeenCalledWith({
-        groupId: 1,
-        itemText: 'アイテム',
-      });
-      expect(result).toBe(1);
-    });
-
-    it('ユーザーメンションを含むアイテムを追加できること', () => {
-      // GroupModel.getByNameがグループを返すようにモック
-      vi.mocked(GroupModel.getByName).mockReturnValue({
-        id: 1,
-        name: 'テストグループ',
-        createdAt: '2023-01-01',
-        updatedAt: '2023-01-01',
-      });
-
-      // GroupItemModel.createが1を返すようにモック
-      vi.mocked(GroupItemModel.create).mockReturnValue(1);
-
-      // メソッドを実行
-      const result = GroupService.addItemToGroup('テストグループ', '<@U1234567>');
-
-      // 期待する結果を検証
-      expect(GroupModel.getByName).toHaveBeenCalledWith('テストグループ');
-      expect(GroupItemModel.create).toHaveBeenCalledWith({
-        groupId: 1,
-        itemText: '<@U1234567>',
-      });
-      expect(result).toBe(1);
-    });
+    expect(service.getAllGroups()).toEqual([group]);
+    expect(service.deleteGroup('昼食')).toBe(true);
+    expect(service.getItemsByGroupName('昼食')).toEqual([item('ラーメン')]);
+    expect(repository.deleteGroupByName).toHaveBeenCalledWith('昼食');
   });
 
-  describe('addItemsToGroup', () => {
-    it('グループが存在しない場合は空配列を返すこと', () => {
-      // GroupModel.getByNameがundefinedを返すようにモック
-      vi.mocked(GroupModel.getByName).mockReturnValue(undefined);
+  it('重複しないグループを作成し、重複時は拒否する', () => {
+    repository.getGroupByName.mockReturnValueOnce(undefined).mockReturnValueOnce(group);
+    repository.createGroup.mockReturnValue(10);
 
-      // メソッドを実行
-      const result = GroupService.addItemsToGroup('存在しないグループ', ['アイテム1', 'アイテム2']);
-
-      // 期待する結果を検証
-      expect(GroupModel.getByName).toHaveBeenCalledWith('存在しないグループ');
-      expect(mockDb.transaction).not.toHaveBeenCalled();
-      expect(GroupItemModel.create).not.toHaveBeenCalled();
-      expect(result).toEqual([]);
-    });
-
-    it('グループが存在する場合は複数のアイテムを追加してID配列を返すこと', () => {
-      // GroupModel.getByNameがグループを返すようにモック
-      vi.mocked(GroupModel.getByName).mockReturnValue({
-        id: 1,
-        name: 'テストグループ',
-        createdAt: '2023-01-01',
-        updatedAt: '2023-01-01',
-      });
-
-      // GroupItemModel.createが連番を返すようにモック
-      vi.mocked(GroupItemModel.create)
-        .mockReturnValueOnce(1)
-        .mockReturnValueOnce(2)
-        .mockReturnValueOnce(3);
-
-      // メソッドを実行
-      const result = GroupService.addItemsToGroup('テストグループ', [
-        'アイテム1',
-        'アイテム2',
-        'アイテム3',
-      ]);
-
-      // 期待する結果を検証
-      expect(GroupModel.getByName).toHaveBeenCalledWith('テストグループ');
-      expect(mockDb.transaction).toHaveBeenCalled();
-      expect(GroupItemModel.create).toHaveBeenCalledTimes(3);
-      expect(GroupItemModel.create).toHaveBeenNthCalledWith(1, {
-        groupId: 1,
-        itemText: 'アイテム1',
-      });
-      expect(GroupItemModel.create).toHaveBeenNthCalledWith(2, {
-        groupId: 1,
-        itemText: 'アイテム2',
-      });
-      expect(GroupItemModel.create).toHaveBeenNthCalledWith(3, {
-        groupId: 1,
-        itemText: 'アイテム3',
-      });
-      expect(result).toEqual([1, 2, 3]);
-    });
-
-    it('ユーザーメンションを含む複数のアイテムを追加できること', () => {
-      // GroupModel.getByNameがグループを返すようにモック
-      vi.mocked(GroupModel.getByName).mockReturnValue({
-        id: 1,
-        name: 'テストグループ',
-        createdAt: '2023-01-01',
-        updatedAt: '2023-01-01',
-      });
-
-      // GroupItemModel.createが連番を返すようにモック
-      vi.mocked(GroupItemModel.create).mockReturnValueOnce(1).mockReturnValueOnce(2);
-
-      // メソッドを実行
-      const result = GroupService.addItemsToGroup('テストグループ', ['<@U1234567>', '<@U7654321>']);
-
-      // 期待する結果を検証
-      expect(GroupModel.getByName).toHaveBeenCalledWith('テストグループ');
-      expect(mockDb.transaction).toHaveBeenCalled();
-      expect(GroupItemModel.create).toHaveBeenCalledTimes(2);
-      expect(GroupItemModel.create).toHaveBeenNthCalledWith(1, {
-        groupId: 1,
-        itemText: '<@U1234567>',
-      });
-      expect(GroupItemModel.create).toHaveBeenNthCalledWith(2, {
-        groupId: 1,
-        itemText: '<@U7654321>',
-      });
-      expect(result).toEqual([1, 2]);
-    });
-
-    it('空の配列が渡された場合は空の配列を返すこと', () => {
-      // GroupModel.getByNameがグループを返すようにモック
-      vi.mocked(GroupModel.getByName).mockReturnValue({
-        id: 1,
-        name: 'テストグループ',
-        createdAt: '2023-01-01',
-        updatedAt: '2023-01-01',
-      });
-
-      // メソッドを実行
-      const result = GroupService.addItemsToGroup('テストグループ', []);
-
-      // 期待する結果を検証
-      expect(GroupModel.getByName).toHaveBeenCalledWith('テストグループ');
-      expect(mockDb.transaction).toHaveBeenCalled();
-      expect(GroupItemModel.create).not.toHaveBeenCalled();
-      expect(result).toEqual([]);
-    });
+    expect(service.createGroup('夕食')).toBe(10);
+    expect(repository.createGroup).toHaveBeenCalledWith('夕食');
+    expect(() => service.createGroup('昼食')).toThrow('既に存在します');
   });
 
-  describe('getRandomItemFromGroupExcluding', () => {
-    it('グループが存在しない場合はundefinedを返すこと', () => {
-      // GroupItemModel.getAllByGroupNameが空配列を返すようにモック
-      vi.mocked(GroupItemModel.getAllByGroupName).mockReturnValue([]);
+  it('存在するグループへ単一アイテムを追加する', () => {
+    repository.getGroupByName.mockReturnValue(group);
+    repository.createItem.mockReturnValue(20);
 
-      // メソッドを実行
-      const result = GroupService.getRandomItemFromGroupExcluding('存在しないグループ', [
-        'アイテム1',
-      ]);
+    expect(service.addItemToGroup('昼食', 'ラーメン')).toBe(20);
+    expect(repository.createItem).toHaveBeenCalledWith(group.id, 'ラーメン');
+  });
 
-      // 期待する結果を検証
-      expect(GroupItemModel.getAllByGroupName).toHaveBeenCalledWith('存在しないグループ');
-      expect(result).toBeUndefined();
-    });
+  it('存在しないグループへの単一追加はundefinedを返す', () => {
+    repository.getGroupByName.mockReturnValue(undefined);
 
-    it('グループが空の場合はundefinedを返すこと', () => {
-      // GroupItemModel.getAllByGroupNameが空配列を返すようにモック
-      vi.mocked(GroupItemModel.getAllByGroupName).mockReturnValue([]);
+    expect(service.addItemToGroup('存在しない', 'ラーメン')).toBeUndefined();
+    expect(repository.createItem).not.toHaveBeenCalled();
+  });
 
-      // メソッドを実行
-      const result = GroupService.getRandomItemFromGroupExcluding('空グループ', []);
+  it('複数アイテムの原子的一括追加をRepositoryへ委譲する', () => {
+    repository.getGroupByName.mockReturnValue(group);
+    repository.createItems.mockReturnValue([20, 21]);
 
-      // 期待する結果を検証
-      expect(GroupItemModel.getAllByGroupName).toHaveBeenCalledWith('空グループ');
-      expect(result).toBeUndefined();
-    });
+    expect(service.addItemsToGroup('昼食', ['ラーメン', '<@U123>'])).toEqual([20, 21]);
+    expect(repository.createItems).toHaveBeenCalledWith(group.id, ['ラーメン', '<@U123>']);
+  });
 
-    it('除外アイテムを指定した場合、それらを除外してランダムに選択すること', () => {
-      // テスト用のアイテムリスト
-      const items = [
-        { id: 1, groupId: 1, itemText: 'アイテム1', createdAt: '2023-01-01' },
-        { id: 2, groupId: 1, itemText: 'アイテム2', createdAt: '2023-01-01' },
-        { id: 3, groupId: 1, itemText: 'アイテム3', createdAt: '2023-01-01' },
-      ];
+  it('存在しないグループへの一括追加は空配列を返す', () => {
+    repository.getGroupByName.mockReturnValue(undefined);
 
-      // GroupItemModel.getAllByGroupNameがアイテムリストを返すようにモック
-      vi.mocked(GroupItemModel.getAllByGroupName).mockReturnValue(items);
+    expect(service.addItemsToGroup('存在しない', ['ラーメン'])).toEqual([]);
+    expect(repository.createItems).not.toHaveBeenCalled();
+  });
 
-      // getRandomItemが特定のアイテムを返すようにモック
-      vi.mocked(getRandomItem).mockReturnValue(items[2]);
+  it('グループからランダムにアイテムを選ぶ', () => {
+    const items = [item('ラーメン'), item('うどん')];
+    repository.getItemsByGroupName.mockReturnValue(items);
+    pickRandomItemMock.mockReturnValue(items[1]);
 
-      // メソッドを実行（アイテム1とアイテム2を除外）
-      const result = GroupService.getRandomItemFromGroupExcluding('テストグループ', [
-        'アイテム1',
-        'アイテム2',
-      ]);
+    expect(service.getRandomItemFromGroup('昼食')).toBe('うどん');
+    expect(pickRandomItemMock).toHaveBeenCalledWith(items);
+  });
 
-      // 期待する結果を検証
-      expect(GroupItemModel.getAllByGroupName).toHaveBeenCalledWith('テストグループ');
-      // フィルタリングされたアイテムリスト（アイテム3のみ）に対してgetRandomItemが呼ばれること
-      expect(getRandomItem).toHaveBeenCalledWith([items[2]]);
-      expect(result).toBe('アイテム3');
-    });
+  it('除外後の候補だけからランダムにアイテムを選ぶ', () => {
+    repository.getItemsByGroupName.mockReturnValue([item('ラーメン'), item('うどん')]);
 
-    it('全てのアイテムが除外リストに含まれる場合はundefinedを返すこと', () => {
-      // テスト用のアイテムリスト
-      const items = [
-        { id: 1, groupId: 1, itemText: 'アイテム1', createdAt: '2023-01-01' },
-        { id: 2, groupId: 1, itemText: 'アイテム2', createdAt: '2023-01-01' },
-      ];
+    expect(service.getRandomItemFromGroupExcluding('昼食', ['ラーメン'])).toBe('うどん');
+    expect(pickRandomItemMock).toHaveBeenCalledWith([item('うどん')]);
+  });
 
-      // GroupItemModel.getAllByGroupNameがアイテムリストを返すようにモック
-      vi.mocked(GroupItemModel.getAllByGroupName).mockReturnValue(items);
+  it('候補が空の場合はundefinedを返す', () => {
+    repository.getItemsByGroupName.mockReturnValue([item('ラーメン')]);
 
-      // メソッドを実行（全てのアイテムを除外）
-      const result = GroupService.getRandomItemFromGroupExcluding('テストグループ', [
-        'アイテム1',
-        'アイテム2',
-      ]);
+    expect(service.getRandomItemFromGroupExcluding('昼食', ['ラーメン'])).toBeUndefined();
+    expect(pickRandomItemMock).not.toHaveBeenCalled();
+  });
 
-      // 期待する結果を検証
-      expect(GroupItemModel.getAllByGroupName).toHaveBeenCalledWith('テストグループ');
-      expect(result).toBeUndefined();
-    });
+  it('アイテム削除と全削除をRepositoryへ委譲する', () => {
+    repository.deleteItemByGroupNameAndText.mockReturnValue(true);
+    repository.getGroupByName.mockReturnValue(group);
+    repository.deleteAllItemsByGroupId.mockReturnValue(true);
+
+    expect(service.removeItemFromGroup('昼食', 'ラーメン')).toBe(true);
+    expect(service.clearGroupItems('昼食')).toBe(true);
+    expect(repository.deleteItemByGroupNameAndText).toHaveBeenCalledWith('昼食', 'ラーメン');
+    expect(repository.deleteAllItemsByGroupId).toHaveBeenCalledWith(group.id);
+  });
+
+  it('存在しないグループの全削除はfalseを返す', () => {
+    repository.getGroupByName.mockReturnValue(undefined);
+
+    expect(service.clearGroupItems('存在しない')).toBe(false);
+    expect(repository.deleteAllItemsByGroupId).not.toHaveBeenCalled();
   });
 });

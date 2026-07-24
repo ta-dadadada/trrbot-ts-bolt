@@ -1,9 +1,16 @@
 import app from './app';
+import { createCommandRegistry } from './commands';
+import { createCommandRouter } from './commands/router';
 import { closeDatabase, openDatabase } from './db/connection';
 import { initializeSchema } from './db/schema';
 import { registerMessageHandlers } from './handlers/messageHandler';
 import { registerMentionHandlers } from './handlers/mentionHandler';
+import { SqliteGroupRepository } from './repositories/sqliteGroupRepository';
+import { SqliteReactionMappingRepository } from './repositories/sqliteReactionMappingRepository';
+import { GroupService } from './services/groupService';
+import { ReactionService } from './services/reactionService';
 import { createLogger } from './utils/logger';
+import { getRandomItem } from './utils/random';
 
 const logger = createLogger('app');
 
@@ -13,11 +20,16 @@ const logger = createLogger('app');
     const db = openDatabase();
     initializeSchema(db);
 
+    const groupService = new GroupService(new SqliteGroupRepository(db), getRandomItem);
+    const reactionService = new ReactionService(new SqliteReactionMappingRepository(db));
+    const commandRegistry = createCommandRegistry({ groupService, reactionService });
+    const processCommand = createCommandRouter(commandRegistry.resolveCommand);
+
     // メッセージハンドラの登録
-    registerMessageHandlers(app);
+    registerMessageHandlers(app, { processCommand, reactionService });
 
     // メンションハンドラの登録
-    registerMentionHandlers(app);
+    registerMentionHandlers(app, { processCommand });
 
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
     await app.start(port);

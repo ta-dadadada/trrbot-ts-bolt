@@ -3,11 +3,22 @@ import { Logger } from '@slack/bolt';
 import { WebClient } from '@slack/web-api';
 import { GroupShuffleCommand } from './groupShuffleCommand';
 import { SayFunction, SlackEvent } from './types';
-import { GroupService } from '../services/groupService';
+import type { GroupOperations } from '../services/groupService';
 import { GroupItem } from '../models/group';
 import * as randomUtils from '../utils/random';
 
-vi.mock('../services/groupService', () => ({ GroupService: { getItemsByGroupName: vi.fn() } }));
+const groupService = {
+  getAllGroups: vi.fn(),
+  createGroup: vi.fn(),
+  deleteGroup: vi.fn(),
+  getItemsByGroupName: vi.fn(),
+  getRandomItemFromGroup: vi.fn(),
+  getRandomItemFromGroupExcluding: vi.fn(),
+  addItemToGroup: vi.fn(),
+  addItemsToGroup: vi.fn(),
+  removeItemFromGroup: vi.fn(),
+  clearGroupItems: vi.fn(),
+} satisfies GroupOperations;
 
 describe('GroupShuffleCommand', () => {
   let command: GroupShuffleCommand;
@@ -17,7 +28,7 @@ describe('GroupShuffleCommand', () => {
   let mockClient: WebClient;
 
   beforeEach(() => {
-    command = new GroupShuffleCommand();
+    command = new GroupShuffleCommand(groupService);
     mockSay = vi.fn().mockResolvedValue({ ok: true, channel: 'C123', ts: '1.000' });
     mockLogger = {
       error: vi.fn(),
@@ -52,14 +63,14 @@ describe('GroupShuffleCommand', () => {
       client: mockClient,
     });
 
-    expect(GroupService.getItemsByGroupName).not.toHaveBeenCalled();
+    expect(groupService.getItemsByGroupName).not.toHaveBeenCalled();
     expect(mockSay).toHaveBeenCalledWith({ text: 'グループ名を指定してください。' });
   });
 
   it.each(['存在しないグループ', '空グループ'])(
     '%s が存在しないか空の場合は同じメッセージを送信する',
     async (groupName) => {
-      vi.mocked(GroupService.getItemsByGroupName).mockReturnValue([]);
+      groupService.getItemsByGroupName.mockReturnValue([]);
 
       await command.execute({
         event: mockEvent,
@@ -70,7 +81,7 @@ describe('GroupShuffleCommand', () => {
         client: mockClient,
       });
 
-      expect(GroupService.getItemsByGroupName).toHaveBeenCalledWith(groupName);
+      expect(groupService.getItemsByGroupName).toHaveBeenCalledWith(groupName);
       expect(mockSay).toHaveBeenCalledWith({
         text: `グループ "${groupName}" は存在しないか、アイテムがありません。`,
       });
@@ -78,7 +89,7 @@ describe('GroupShuffleCommand', () => {
   );
 
   it('アイテムが1件の場合は特別なメッセージを送信する', async () => {
-    vi.mocked(GroupService.getItemsByGroupName).mockReturnValue([item('唯一')]);
+    groupService.getItemsByGroupName.mockReturnValue([item('唯一')]);
 
     await command.execute({
       event: mockEvent,
@@ -95,7 +106,7 @@ describe('GroupShuffleCommand', () => {
   });
 
   it('GroupServiceのアイテムをシャッフルして番号付きで送信する', async () => {
-    vi.mocked(GroupService.getItemsByGroupName).mockReturnValue([item('A'), item('B'), item('C')]);
+    groupService.getItemsByGroupName.mockReturnValue([item('A'), item('B'), item('C')]);
     const shuffleArray = vi.spyOn(randomUtils, 'shuffleArray').mockReturnValue(['C', 'A', 'B']);
 
     await command.execute({
@@ -107,7 +118,7 @@ describe('GroupShuffleCommand', () => {
       client: mockClient,
     });
 
-    expect(GroupService.getItemsByGroupName).toHaveBeenCalledWith('テスト');
+    expect(groupService.getItemsByGroupName).toHaveBeenCalledWith('テスト');
     expect(shuffleArray).toHaveBeenCalledWith(['A', 'B', 'C']);
     expect(mockSay).toHaveBeenCalledWith({
       text: 'グループ "テスト" のシャッフル結果:\n1. C\n2. A\n3. B',
@@ -115,7 +126,7 @@ describe('GroupShuffleCommand', () => {
   });
 
   it('既存スレッドへ返信する', async () => {
-    vi.mocked(GroupService.getItemsByGroupName).mockReturnValue([item('A'), item('B')]);
+    groupService.getItemsByGroupName.mockReturnValue([item('A'), item('B')]);
     vi.spyOn(randomUtils, 'shuffleArray').mockReturnValue(['B', 'A']);
 
     await command.execute({

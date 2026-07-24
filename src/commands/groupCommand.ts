@@ -1,5 +1,5 @@
 import { Command, CommandContext, getThreadTs } from './types';
-import { GroupService } from '../services/groupService';
+import type { GroupOperations } from '../services/groupService';
 import { BOT_MENTION_NAME } from '../config/constants';
 import { validateGroupName, validateItemText, ValidationError } from '../utils/validation';
 import { DatabaseError } from '../utils/errors';
@@ -9,6 +9,8 @@ import { DatabaseError } from '../utils/errors';
  */
 export class GroupCommand implements Command {
   description = 'グループを管理します';
+
+  constructor(private readonly groupService: GroupOperations) {}
 
   getExamples(commandName: string): string[] {
     return [
@@ -137,7 +139,7 @@ export class GroupCommand implements Command {
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
 
-    const groups = GroupService.getAllGroups();
+    const groups = this.groupService.getAllGroups();
 
     if (groups.length === 0) {
       await say({
@@ -166,7 +168,7 @@ export class GroupCommand implements Command {
     const validatedGroupName = validateGroupName(groupName);
 
     try {
-      GroupService.createGroup(validatedGroupName);
+      this.groupService.createGroup(validatedGroupName);
     } catch (error) {
       throw new DatabaseError('Failed to create group', {
         groupName: validatedGroupName,
@@ -188,7 +190,7 @@ export class GroupCommand implements Command {
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
 
-    const success = GroupService.deleteGroup(groupName);
+    const success = this.groupService.deleteGroup(groupName);
 
     if (success) {
       await say({
@@ -211,7 +213,7 @@ export class GroupCommand implements Command {
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
 
-    const items = GroupService.getItemsByGroupName(groupName);
+    const items = this.groupService.getItemsByGroupName(groupName);
 
     if (items.length === 0) {
       await say({
@@ -261,7 +263,7 @@ export class GroupCommand implements Command {
 
     try {
       if (validatedItems.length === 1) {
-        const result = GroupService.addItemToGroup(groupName, validatedItems[0]);
+        const result = this.groupService.addItemToGroup(groupName, validatedItems[0]);
 
         if (result !== undefined) {
           await say({
@@ -275,7 +277,7 @@ export class GroupCommand implements Command {
           });
         }
       } else {
-        const results = GroupService.addItemsToGroup(groupName, validatedItems);
+        const results = this.groupService.addItemsToGroup(groupName, validatedItems);
 
         if (results.length > 0) {
           await say({
@@ -312,7 +314,7 @@ export class GroupCommand implements Command {
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
 
-    const success = GroupService.removeItemFromGroup(groupName, itemText);
+    const success = this.groupService.removeItemFromGroup(groupName, itemText);
 
     if (success) {
       await say({
@@ -335,7 +337,7 @@ export class GroupCommand implements Command {
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
 
-    const success = GroupService.clearGroupItems(groupName);
+    const success = this.groupService.clearGroupItems(groupName);
 
     if (success) {
       await say({
