@@ -46,20 +46,26 @@ TypeScript 7.1以降でプログラムAPIと`typescript-eslint`の対応状況�
 このプロジェクトでは、コード品質を保つためにGit Hooksを使用しています。`npm install`を実行すると、Huskyが自動的に以下のフックを設定します：
 
 #### pre-commit
+
 コミット前に以下の処理が自動実行されます：
+
 - **ESLint**: コードの静的解析と自動修正
 - **Prettier**: コードフォーマットの自動適用
 
 これにより、ステージされたTypeScriptファイルのみがチェック・修正されます。
 
 #### pre-push
+
 プッシュ前に以下の処理が自動実行されます：
+
 - **テスト実行**: 全てのテストが実行され、失敗するとpushがブロックされます
 
 #### commit-msg
+
 コミットメッセージが[Conventional Commits](https://www.conventionalcommits.org/)形式に従っているかチェックされます。
 
 **利用可能なコミットタイプ:**
+
 - `feat`: 新機能
 - `fix`: バグ修正
 - `docs`: ドキュメント
@@ -73,13 +79,16 @@ TypeScript 7.1以降でプログラムAPIと`typescript-eslint`の対応状況�
 - `revert`: 取り消し
 
 **コミットメッセージ例:**
+
 ```bash
 git commit -m "feat: ユーザー認証機能を追加"
 git commit -m "fix: メッセージ送信時のエラーを修正"
 ```
 
 #### Git Hooksを一時的にスキップする方法
+
 緊急時など、Hooksをスキップしたい場合：
+
 ```bash
 git commit --no-verify -m "message"
 git push --no-verify
@@ -92,11 +101,13 @@ git push --no-verify
 このプロジェクトでは、以下の自動化されたセキュリティ対策を実施しています：
 
 #### Dependabot
+
 - **セキュリティアップデート**: 脆弱性のある依存関係を自動検出し、修正PRを作成
 - **自動マージ**: パッチ・マイナーバージョンの更新は自動的にマージされます
 - **定期チェック**: 毎週月曜日 9:00 (JST)に依存関係をスキャン
 
 #### Secret Scanning
+
 - **シークレット検出**: APIキーやトークンの誤コミットを自動検出
 - **Push Protection**: シークレットを含むコミットのpushを自動的にブロック
 
@@ -113,12 +124,13 @@ git push --no-verify
 CI環境（GitHub Actions等）でGit Hooksをスキップするには、`HUSKY=0`環境変数を設定します。
 
 本プロジェクトのCIワークフローでは既に設定済みです：
+
 ```yaml
 jobs:
   setup:
     runs-on: ubuntu-latest
     env:
-      HUSKY: 0  # Git Hooksをスキップ
+      HUSKY: 0 # Git Hooksをスキップ
     steps:
       - uses: actions/checkout@v5
       - name: Install dependencies
@@ -177,6 +189,7 @@ LOG_LEVEL=info  # オプション: trace | debug | info | warn | error | fatal |
 ```
 
 **環境変数の説明**:
+
 - `SLACK_BOT_TOKEN`: Slack Bot User OAuth Token（必須）
 - `SLACK_SIGNING_SECRET`: Slack Signing Secret（必須）
 - `SLACK_APP_TOKEN`: Slack App-Level Token（Socket Mode使用時に必須）
@@ -215,11 +228,13 @@ docker-compose down -v
 
 - `src/`: ソースコード
   - `app.ts`: Boltアプリケーションの設定
-  - `index.ts`: アプリケーションのエントリーポイント
+  - `index.ts`: DB・Repository・Service・Command・Handlerを組み立てるエントリーポイント
   - `config/`: 設定関連
   - `db/`: データベース接続・スキーマ管理
-  - `models/`: データモデル
-  - `services/`: ビジネスロジック
+  - `models/`: 永続化対象のデータ型
+  - `repositories/`: SQLiteへのデータアクセスとトランザクション
+  - `services/`: Repositoryを利用するビジネスロジック
+  - `commands/`: Slackコマンドの解析・実行
   - `handlers/`: イベントハンドラ
   - `utils/`: ユーティリティ関数
 - `dist/`: ビルド成果物
