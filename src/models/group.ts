@@ -1,4 +1,4 @@
-import db from '../config/database';
+import { getDatabase } from '../db/connection';
 
 /**
  * グループの型定義
@@ -44,6 +44,7 @@ export class GroupModel {
    * @returns グループの配列
    */
   static getAll(): Group[] {
+    const db = getDatabase();
     const stmt = db.prepare(`
       SELECT 
         id, 
@@ -52,7 +53,7 @@ export class GroupModel {
         updated_at as updatedAt 
       FROM groups
     `);
-    
+
     return stmt.all() as Group[];
   }
 
@@ -62,6 +63,7 @@ export class GroupModel {
    * @returns グループ、存在しない場合はundefined
    */
   static getByName(name: string): Group | undefined {
+    const db = getDatabase();
     const stmt = db.prepare(`
       SELECT 
         id, 
@@ -71,7 +73,7 @@ export class GroupModel {
       FROM groups
       WHERE name = ?
     `);
-    
+
     return stmt.get(name) as Group | undefined;
   }
 
@@ -81,6 +83,7 @@ export class GroupModel {
    * @returns 作成されたグループのID
    */
   static create(data: CreateGroupData): number {
+    const db = getDatabase();
     const stmt = db.prepare('INSERT INTO groups (name) VALUES (?)');
     const result = stmt.run(data.name);
     return result.lastInsertRowid as number;
@@ -92,6 +95,7 @@ export class GroupModel {
    * @returns 削除に成功した場合はtrue、失敗した場合はfalse
    */
   static delete(id: number): boolean {
+    const db = getDatabase();
     const stmt = db.prepare('DELETE FROM groups WHERE id = ?');
     const result = stmt.run(id);
     return result.changes > 0;
@@ -103,6 +107,7 @@ export class GroupModel {
    * @returns 削除に成功した場合はtrue、失敗した場合はfalse
    */
   static deleteByName(name: string): boolean {
+    const db = getDatabase();
     const stmt = db.prepare('DELETE FROM groups WHERE name = ?');
     const result = stmt.run(name);
     return result.changes > 0;
@@ -119,6 +124,7 @@ export class GroupItemModel {
    * @returns グループアイテムの配列
    */
   static getAllByGroupId(groupId: number): GroupItem[] {
+    const db = getDatabase();
     const stmt = db.prepare(`
       SELECT 
         id, 
@@ -128,7 +134,7 @@ export class GroupItemModel {
       FROM group_items
       WHERE group_id = ?
     `);
-    
+
     return stmt.all(groupId) as GroupItem[];
   }
 
@@ -142,7 +148,7 @@ export class GroupItemModel {
     if (!group) {
       return [];
     }
-    
+
     return GroupItemModel.getAllByGroupId(group.id);
   }
 
@@ -152,11 +158,12 @@ export class GroupItemModel {
    * @returns 作成されたグループアイテムのID
    */
   static create(data: CreateGroupItemData): number {
+    const db = getDatabase();
     const stmt = db.prepare(`
       INSERT INTO group_items (group_id, item_text)
       VALUES (?, ?)
     `);
-    
+
     const result = stmt.run(data.groupId, data.itemText);
     return result.lastInsertRowid as number;
   }
@@ -167,6 +174,7 @@ export class GroupItemModel {
    * @returns 削除に成功した場合はtrue、失敗した場合はfalse
    */
   static delete(id: number): boolean {
+    const db = getDatabase();
     const stmt = db.prepare('DELETE FROM group_items WHERE id = ?');
     const result = stmt.run(id);
     return result.changes > 0;
@@ -178,6 +186,7 @@ export class GroupItemModel {
    * @returns 削除に成功した場合はtrue、失敗した場合はfalse
    */
   static deleteAllByGroupId(groupId: number): boolean {
+    const db = getDatabase();
     const stmt = db.prepare('DELETE FROM group_items WHERE group_id = ?');
     const result = stmt.run(groupId);
     return result.changes > 0;
@@ -194,7 +203,8 @@ export class GroupItemModel {
     if (!group) {
       return false;
     }
-    
+
+    const db = getDatabase();
     const stmt = db.prepare('DELETE FROM group_items WHERE group_id = ? AND item_text = ?');
     const result = stmt.run(group.id, itemText);
     return result.changes > 0;

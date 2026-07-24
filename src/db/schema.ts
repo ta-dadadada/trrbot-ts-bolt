@@ -1,14 +1,15 @@
-import db from '../config/database';
-import { createLogger } from './logger';
+import type Database from 'better-sqlite3';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('database');
 
 /**
- * データベースの初期化を行う
- * テーブルが存在しない場合は作成する
+ * データベースのスキーマを初期化する
+ *
+ * スキーマ変更が必要になった場合は、PRAGMA user_versionによる
+ * バージョン管理へ移行する。
  */
-export const initializeDatabase = (): void => {
-  // リアクションマッピングテーブルの作成
+export const initializeSchema = (db: Database.Database): void => {
   db.exec(`
     CREATE TABLE IF NOT EXISTS reaction_mappings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +21,6 @@ export const initializeDatabase = (): void => {
     );
   `);
 
-  // グループテーブルの作成
   db.exec(`
     CREATE TABLE IF NOT EXISTS groups (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,7 +30,6 @@ export const initializeDatabase = (): void => {
     );
   `);
 
-  // グループアイテムテーブルの作成
   db.exec(`
     CREATE TABLE IF NOT EXISTS group_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,12 +41,4 @@ export const initializeDatabase = (): void => {
   `);
 
   logger.info('データベース初期化完了');
-};
-
-/**
- * データベース接続を閉じる
- */
-export const closeDatabase = (): void => {
-  db.close();
-  logger.info('データベース接続クローズ');
 };

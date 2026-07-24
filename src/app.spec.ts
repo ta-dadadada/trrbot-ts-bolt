@@ -20,26 +20,6 @@ vi.mock('dotenv', () => ({
   },
 }));
 
-vi.mock('better-sqlite3', () => {
-  const mockDb = {
-    prepare: vi.fn().mockReturnValue({
-      all: vi.fn().mockReturnValue([]),
-      get: vi.fn().mockReturnValue(undefined),
-      run: vi.fn().mockReturnValue({ changes: 0, lastInsertRowid: 1 }),
-    }),
-    exec: vi.fn(),
-    pragma: vi.fn(),
-    close: vi.fn(),
-  };
-  return vi.fn().mockImplementation(() => mockDb);
-});
-
-// ファイルシステムのモック
-vi.mock('fs', () => ({
-  existsSync: vi.fn().mockReturnValue(true),
-  mkdirSync: vi.fn(),
-}));
-
 describe('Slackアプリケーション', () => {
   // 各テスト前に環境をクリーンアップ
   beforeEach(() => {

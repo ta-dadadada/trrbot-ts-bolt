@@ -46,6 +46,7 @@ Commands follow a class-based pattern implementing the `Command` interface (`src
 ### Database Layer
 - **SQLite** via `better-sqlite3` for persistence
 - **Database file**: `data/trrbot.db` (auto-created on first run)
+- **Connection and schema** (`src/db/`): Opens the shared connection explicitly at startup and owns schema initialization
 - **Models** (`src/models/`): Static class methods for database operations (e.g., `ReactionMappingModel`, `GroupModel`)
 - **Services** (`src/services/`): Business logic layer that uses models (e.g., `ReactionService`, `GroupService`)
 
