@@ -4,6 +4,7 @@ import { FilesUploadV2Arguments } from '@slack/web-api';
 import { BOT_MENTION_NAME } from '../config/constants';
 import { validateTriggerText, ValidationError } from '../utils/validation';
 import { stringify } from 'csv-stringify/sync';
+import { DatabaseError, SlackAPIError } from '../utils/errors';
 
 /**
  * リアクションコマンドの実装
@@ -90,29 +91,32 @@ export class ReactionCommand implements Command {
     // スレッドのタイムスタンプが存在しない場合は、イベントのタイムスタンプを使用
     const threadTs = getThreadTs(event) || event.ts;
 
+    let validatedTriggerText: string;
     try {
-      // トリガーテキストのバリデーション
-      const validatedTriggerText = validateTriggerText(triggerText);
-
+      validatedTriggerText = validateTriggerText(triggerText);
       ReactionService.addReactionMapping(validatedTriggerText, reaction);
-
-      await say({
-        text: `リアクションマッピングを追加しました: "${validatedTriggerText}" → ${reaction}`,
-        thread_ts: threadTs,
-      });
     } catch (error) {
       if (error instanceof ValidationError) {
-        await say({
-          text: `バリデーションエラー: ${error.message}`,
-          thread_ts: threadTs,
-        });
-      } else {
-        await say({
-          text: `リアクションマッピングの追加に失敗しました: ${(error as Error).message}`,
-          thread_ts: threadTs,
-        });
+        throw new ValidationError(
+          error.message,
+          `バリデーションエラー: ${error.message}`,
+          error.context,
+          'message-thread',
+        );
       }
+      const message = error instanceof Error ? error.message : String(error);
+      throw new DatabaseError(
+        'Failed to add reaction mapping',
+        { triggerText, reaction, error: message },
+        `リアクションマッピングの追加に失敗しました: ${message}`,
+        'message-thread',
+      );
     }
+
+    await say({
+      text: `リアクションマッピングを追加しました: "${validatedTriggerText}" → ${reaction}`,
+      thread_ts: threadTs,
+    });
   }
 
   /**
@@ -199,10 +203,13 @@ export class ReactionCommand implements Command {
 
       await client.files.uploadV2(uploadParams);
     } catch (error) {
-      await say({
-        text: `リアクションマッピングのエクスポートに失敗しました: ${(error as Error).message}`,
-        thread_ts: threadTs,
-      });
+      const message = error instanceof Error ? error.message : String(error);
+      throw new SlackAPIError(
+        'Failed to export reaction mappings',
+        { channel: event.channel, error: message },
+        `リアクションマッピングのエクスポートに失敗しました: ${message}`,
+        'message-thread',
+      );
     }
   }
 }

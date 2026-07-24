@@ -170,6 +170,17 @@ describe('errorHandler', () => {
       );
     });
 
+    it('message-thread指定時は元メッセージをスレッド起点にする', async () => {
+      const error = new ValidationError('Test', 'Test message', undefined, 'message-thread');
+
+      await handleCommandError(error, mockContext, 'group');
+
+      expect(mockSay).toHaveBeenCalledWith({
+        text: 'Test message',
+        thread_ts: '1234567890.123456',
+      });
+    });
+
     it('should work without command name', async () => {
       const error = new ValidationError('Test', 'Test message');
 
@@ -193,6 +204,7 @@ describe('errorHandler', () => {
       const infoArgs = (mockLogger.info as ReturnType<typeof vi.fn>).mock.calls[0];
       const logEntry = infoArgs[0];
       expect(logEntry.message).toBe('Command executed successfully');
+      expect(logEntry.command).toBe('dice');
       expect(logEntry.user).toBe('U123');
       expect(logEntry.result).toBe(4);
     });

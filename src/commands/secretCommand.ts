@@ -1,6 +1,7 @@
 import { Command, CommandContext, getThreadTs } from './types';
 import { getRandomStringWithSymbols } from '../utils/random';
 import { BOT_MENTION_NAME } from '../config/constants';
+import { BotError, ValidationError } from '../utils/errors';
 
 /**
  * 記号を含むランダムな文字列を生成するコマンドの実装
@@ -13,7 +14,7 @@ export class SecretCommand implements Command {
   }
 
   async execute(context: CommandContext): Promise<void> {
-    const { event, say, args, logger } = context;
+    const { event, say, args } = context;
     const threadTs = getThreadTs(event);
 
     // デフォルトは10文字
@@ -24,11 +25,11 @@ export class SecretCommand implements Command {
       const lengthArg = parseInt(args[0], 10);
 
       if (isNaN(lengthArg) || lengthArg < 1) {
-        await say({
-          text: '有効な正の整数を指定してください。',
-          ...(threadTs && { thread_ts: threadTs }),
-        });
-        return;
+        throw new ValidationError(
+          `Invalid secret length: ${args[0]}`,
+          '有効な正の整数を指定してください。',
+          { providedValue: args[0] },
+        );
       }
 
       // 長すぎる文字列の生成を防止（最大100文字）
@@ -43,11 +44,12 @@ export class SecretCommand implements Command {
         ...(threadTs && { thread_ts: threadTs }),
       });
     } catch (error) {
-      logger.error('ランダム文字列生成コマンドの実行中にエラーが発生しました', error);
-      await say({
-        text: 'ランダム文字列の生成中にエラーが発生しました。',
-        ...(threadTs && { thread_ts: threadTs }),
-      });
+      const message = error instanceof Error ? error.message : String(error);
+      throw new BotError(
+        'Failed to generate secret string',
+        'ランダム文字列の生成中にエラーが発生しました。',
+        { error: message },
+      );
     }
   }
 }
