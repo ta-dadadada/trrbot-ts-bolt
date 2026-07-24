@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@slack/bolt": "^5.0.0",
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.0.1",
     "csv-stringify": "^6.8.1",
     "dotenv": "^17.4.2",
     "pino": "^10.3.1"
