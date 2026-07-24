@@ -54,4 +54,36 @@ describe('ReactionService.findMatchingMappings', () => {
 
     expect(ReactionService.findMatchingMappings('goodbye')).toEqual([]);
   });
+
+  it('addReactionMappingは作成データをModelへ渡し戻り値を返す', () => {
+    vi.mocked(ReactionMappingModel.create).mockReturnValue(42);
+
+    expect(ReactionService.addReactionMapping('hello', ':wave:')).toBe(42);
+    expect(ReactionMappingModel.create).toHaveBeenCalledWith({
+      triggerText: 'hello',
+      reaction: ':wave:',
+    });
+  });
+
+  it('removeReactionMappingは引数をModelへ渡し戻り値を返す', () => {
+    vi.mocked(ReactionMappingModel.deleteByTriggerAndReaction).mockReturnValue(true);
+
+    expect(ReactionService.removeReactionMapping('hello', ':wave:')).toBe(true);
+    expect(ReactionMappingModel.deleteByTriggerAndReaction).toHaveBeenCalledWith('hello', ':wave:');
+  });
+
+  it('getAllReactionMappingsはModelの戻り値をそのまま返す', () => {
+    const mappings = [mapping(1, 'hello', ':wave:')];
+    vi.mocked(ReactionMappingModel.getAll).mockReturnValue(mappings);
+
+    expect(ReactionService.getAllReactionMappings()).toBe(mappings);
+    expect(ReactionMappingModel.getAll).toHaveBeenCalledWith();
+  });
+
+  it('incrementReactionUsageは引数をModelへ渡し戻り値を返す', () => {
+    vi.mocked(ReactionMappingModel.incrementUsageCount).mockReturnValue(false);
+
+    expect(ReactionService.incrementReactionUsage('hello', ':wave:')).toBe(false);
+    expect(ReactionMappingModel.incrementUsageCount).toHaveBeenCalledWith('hello', ':wave:');
+  });
 });
