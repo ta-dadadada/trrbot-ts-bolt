@@ -24,6 +24,7 @@ export class SqliteReactionMappingRepository implements ReactionMappingRepositor
         created_at as createdAt,
         updated_at as updatedAt
       FROM reaction_mappings
+      ORDER BY id ASC
     `);
 
     return statement.all() as ReactionMapping[];
