@@ -227,9 +227,10 @@ docker-compose down -v
 ## プロジェクト構成
 
 - `src/`: ソースコード
-  - `app.ts`: Boltアプリケーションの設定
-  - `index.ts`: DB・Repository・Service・Command・Handlerを組み立てるエントリーポイント
-  - `config/`: 設定関連
+  - `index.ts`: 環境変数とプロセス終了処理を扱うエントリーポイント
+  - `app.ts`: 起動設定からBoltアプリケーションを生成するFactory
+  - `runtime.ts`: DB・Repository・Service・Command・Handlerの組み立てとリソース管理
+  - `config/`: 環境変数から起動設定を生成する処理
   - `db/`: データベース接続・スキーマ管理
   - `models/`: 永続化対象のデータ型
   - `repositories/`: SQLiteへのデータアクセスとトランザクション
