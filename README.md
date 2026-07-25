@@ -106,6 +106,12 @@ git push --no-verify
 - **自動マージ**: パッチ・マイナーバージョンの更新は自動的にマージされます
 - **定期チェック**: 毎週月曜日 9:00 (JST)に依存関係をスキャン
 
+#### Trivy
+
+- **依存関係スキャン**: PRと`main`へのpushで、開発依存を含むnpm依存関係を検査
+- **CIゲート**: 修正版が存在するHIGHまたはCRITICALの脆弱性を検出した場合、CIを失敗させます
+- **GitHub連携**: 検査結果をGitHub Code Scanningへ送信し、Securityタブで管理
+
 #### Secret Scanning
 
 - **シークレット検出**: APIキーやトークンの誤コミットを自動検出
@@ -123,31 +129,7 @@ git push --no-verify
 
 CI環境（GitHub Actions等）でGit Hooksをスキップするには、`HUSKY=0`環境変数を設定します。
 
-本プロジェクトのCIワークフローでは既に設定済みです：
-
-```yaml
-env:
-  HUSKY: 0
-
-jobs:
-  quality:
-    runs-on: ubuntu-slim
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: '24'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Run ESLint
-        run: npm run lint
-      - name: Run tests
-        run: npm test
-      - name: Build
-        run: npm run build
-```
+本プロジェクトのCIワークフローでは設定済みです。
 
 ## Dockerを使用したデプロイ
 
