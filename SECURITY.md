@@ -25,6 +25,7 @@ This project implements the following automated security measures:
 
 - **Dependabot Security Updates**: Automatically detects vulnerable dependencies and creates PRs
 - **Dependabot Auto-merge**: Automatically merges patch and minor security updates
+- **Trivy CI Gate**: Blocks fixable HIGH and CRITICAL vulnerabilities in all npm dependencies, including development dependencies, and uploads SARIF results to GitHub Code Scanning. For pull requests from forks, the vulnerability scan and CI gate still run, but SARIF upload is skipped due to GitHub permission restrictions
 - **Secret Scanning**: Detects and prevents accidental commits of secrets (API keys, etc.)
 - **Scheduled Scans**: Weekly dependency vulnerability checks every Monday at 9:00 AM JST
 

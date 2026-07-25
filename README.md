@@ -106,6 +106,12 @@ git push --no-verify
 - **自動マージ**: パッチ・マイナーバージョンの更新は自動的にマージされます
 - **定期チェック**: 毎週月曜日 9:00 (JST)に依存関係をスキャン
 
+#### Trivy
+
+- **依存関係スキャン**: PRと`main`へのpushで、開発依存を含むnpm依存関係を検査
+- **CIゲート**: 修正版が存在するHIGHまたはCRITICALの脆弱性を検出した場合、CIを失敗させます
+- **GitHub連携**: 検査結果をGitHub Code Scanningへ送信し、Securityタブで管理。forkからのPRでは権限制約によりSARIF送信をスキップしますが、脆弱性検査とCIゲートは実行します
+
 #### Secret Scanning
 
 - **シークレット検出**: APIキーやトークンの誤コミットを自動検出
@@ -123,19 +129,7 @@ git push --no-verify
 
 CI環境（GitHub Actions等）でGit Hooksをスキップするには、`HUSKY=0`環境変数を設定します。
 
-本プロジェクトのCIワークフローでは既に設定済みです：
-
-```yaml
-jobs:
-  setup:
-    runs-on: ubuntu-latest
-    env:
-      HUSKY: 0 # Git Hooksをスキップ
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install dependencies
-        run: npm ci
-```
+本プロジェクトのCIワークフローでは設定済みです。
 
 ## Dockerを使用したデプロイ
 
@@ -143,9 +137,16 @@ jobs:
 
 このプロジェクトのDockerイメージはGitHub Container Registryで公開されています。
 
+- `latest`: `main`ブランチで最後に公開に成功したイメージ
+- `stable`: SemVerタグで最後に公開に成功したイメージ
+- バージョン番号: 指定したリリースのイメージ
+
 ```bash
-# 最新版を取得
+# mainブランチの最新ビルドを取得
 docker pull ghcr.io/ta-dadadada/trrbot-ts-bolt:latest
+
+# 最後に公開された安定版を取得
+docker pull ghcr.io/ta-dadadada/trrbot-ts-bolt:stable
 
 # 特定のバージョンを取得
 docker pull ghcr.io/ta-dadadada/trrbot-ts-bolt:1.0.0
