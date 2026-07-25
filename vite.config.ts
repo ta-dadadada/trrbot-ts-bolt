@@ -22,6 +22,7 @@ export default defineConfig({
       external: [
         '@slack/bolt',
         'dotenv',
+        'dotenv/config',
         'better-sqlite3',
         'pino',
         'pino-pretty',

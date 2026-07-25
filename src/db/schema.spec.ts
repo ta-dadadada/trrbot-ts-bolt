@@ -11,7 +11,7 @@ describe('database schema', () => {
   });
 
   afterEach(() => {
-    closeDatabase();
+    closeDatabase(db);
   });
 
   it('必要なテーブルを作成すること', () => {

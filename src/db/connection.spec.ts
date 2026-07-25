@@ -1,3 +1,4 @@
+import type Database from 'better-sqlite3';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -6,9 +7,18 @@ import { closeDatabase, openDatabase } from './connection';
 
 describe('database connection', () => {
   let temporaryDirectory: string | undefined;
+  const databases: Database.Database[] = [];
+
+  const openTrackedDatabase = (dbPath?: string): Database.Database => {
+    const database = dbPath === undefined ? openDatabase() : openDatabase(dbPath);
+    databases.push(database);
+    return database;
+  };
 
   afterEach(() => {
-    closeDatabase();
+    for (const database of databases.splice(0)) {
+      closeDatabase(database);
+    }
     if (temporaryDirectory) {
       fs.rmSync(temporaryDirectory, { recursive: true, force: true });
       temporaryDirectory = undefined;
@@ -17,33 +27,34 @@ describe('database connection', () => {
   });
 
   it('in-memory接続で外部キー制約を有効にすること', () => {
-    const db = openDatabase(':memory:');
+    const db = openTrackedDatabase(':memory:');
 
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1);
   });
 
-  it('開かれている接続を再利用すること', () => {
-    const first = openDatabase(':memory:');
+  it('呼び出しごとに独立した接続を開くこと', () => {
+    const first = openTrackedDatabase(':memory:');
+    const second = openTrackedDatabase(':memory:');
 
-    expect(openDatabase(':memory:')).toBe(first);
+    expect(second).not.toBe(first);
+    closeDatabase(first);
+    expect(first.open).toBe(false);
+    expect(second.open).toBe(true);
   });
 
-  it('終了後に新しい接続を開けること', () => {
-    const first = openDatabase(':memory:');
-    closeDatabase();
+  it('同じ接続を複数回閉じても安全であること', () => {
+    const db = openTrackedDatabase(':memory:');
 
-    expect(openDatabase(':memory:')).not.toBe(first);
-  });
+    closeDatabase(db);
 
-  it('未接続でも安全に終了できること', () => {
-    expect(() => closeDatabase()).not.toThrow();
+    expect(() => closeDatabase(db)).not.toThrow();
   });
 
   it('ファイルDBの親ディレクトリを作成すること', () => {
     temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'trrbot-db-'));
     const dbPath = path.join(temporaryDirectory, 'nested', 'test.db');
 
-    openDatabase(dbPath);
+    openTrackedDatabase(dbPath);
 
     expect(fs.existsSync(dbPath)).toBe(true);
   });
@@ -52,7 +63,7 @@ describe('database connection', () => {
     temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'trrbot-default-db-'));
     vi.spyOn(process, 'cwd').mockReturnValue(temporaryDirectory);
 
-    openDatabase();
+    openTrackedDatabase();
 
     expect(fs.existsSync(path.join(temporaryDirectory, 'data', 'trrbot.db'))).toBe(true);
   });
