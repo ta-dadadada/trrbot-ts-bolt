@@ -126,15 +126,27 @@ CI環境（GitHub Actions等）でGit Hooksをスキップするには、`HUSKY=
 本プロジェクトのCIワークフローでは既に設定済みです：
 
 ```yaml
+env:
+  HUSKY: 0
+
 jobs:
-  setup:
-    runs-on: ubuntu-latest
-    env:
-      HUSKY: 0 # Git Hooksをスキップ
+  quality:
+    runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+          cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Run ESLint
+        run: npm run lint
+      - name: Run tests
+        run: npm test
+      - name: Build
+        run: npm run build
 ```
 
 ## Dockerを使用したデプロイ
@@ -143,9 +155,16 @@ jobs:
 
 このプロジェクトのDockerイメージはGitHub Container Registryで公開されています。
 
+- `latest`: `main`ブランチで最後に公開に成功したイメージ
+- `stable`: SemVerタグで最後に公開に成功したイメージ
+- バージョン番号: 指定したリリースのイメージ
+
 ```bash
-# 最新版を取得
+# mainブランチの最新ビルドを取得
 docker pull ghcr.io/ta-dadadada/trrbot-ts-bolt:latest
+
+# 最後に公開された安定版を取得
+docker pull ghcr.io/ta-dadadada/trrbot-ts-bolt:stable
 
 # 特定のバージョンを取得
 docker pull ghcr.io/ta-dadadada/trrbot-ts-bolt:1.0.0
