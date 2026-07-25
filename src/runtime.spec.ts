@@ -10,13 +10,15 @@ describe('ApplicationRuntime', () => {
   let message: ReturnType<typeof vi.fn>;
   let event: ReturnType<typeof vi.fn>;
   let start: ReturnType<typeof vi.fn>;
+  let stop: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     db = openDatabase(':memory:');
     message = vi.fn();
     event = vi.fn();
     start = vi.fn().mockResolvedValue(undefined);
-    app = { message, event, start } as unknown as App;
+    stop = vi.fn().mockResolvedValue(undefined);
+    app = { message, event, start, stop } as unknown as App;
   });
 
   afterEach(() => {
@@ -25,7 +27,7 @@ describe('ApplicationRuntime', () => {
     }
   });
 
-  it('スキーマと依存関係を組み立ててHandlerを登録する', () => {
+  it('スキーマと依存関係を組み立ててHandlerを登録する', async () => {
     const runtime = createApplicationRuntime({
       app,
       db,
@@ -46,7 +48,8 @@ describe('ApplicationRuntime', () => {
     expect(message).toHaveBeenCalledOnce();
     expect(event).toHaveBeenCalledWith('app_mention', expect.any(Function));
 
-    runtime.stop();
+    await runtime.stop();
+    expect(stop).not.toHaveBeenCalled();
   });
 
   it('指定されたポートでSlack Appを起動する', async () => {
@@ -59,7 +62,7 @@ describe('ApplicationRuntime', () => {
     await runtime.start(8080);
 
     expect(start).toHaveBeenCalledWith(8080);
-    runtime.stop();
+    await runtime.stop();
   });
 
   it('起動に失敗した場合はDB接続を閉じて例外を再送出する', async () => {
@@ -73,18 +76,65 @@ describe('ApplicationRuntime', () => {
 
     await expect(runtime.start(3000)).rejects.toBe(error);
     expect(db.open).toBe(false);
+    expect(stop).not.toHaveBeenCalled();
   });
 
-  it('終了処理を複数回呼び出してもDB接続を一度だけ閉じる', () => {
+  it('起動後はSlack Appの停止を待ってからDB接続を閉じる', async () => {
+    let completeStop: (() => void) | undefined;
+    stop.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          completeStop = resolve;
+        }),
+    );
     const runtime = createApplicationRuntime({
       app,
       db,
       pickRandomItem: (items) => items[0],
     });
+    await runtime.start(3000);
 
-    runtime.stop();
+    const stopping = runtime.stop();
+
+    expect(stop).toHaveBeenCalledOnce();
+    expect(db.open).toBe(true);
+
+    completeStop?.();
+    await stopping;
 
     expect(db.open).toBe(false);
-    expect(() => runtime.stop()).not.toThrow();
+  });
+
+  it('並行して終了処理を呼び出しても同じ処理を共有する', async () => {
+    const runtime = createApplicationRuntime({
+      app,
+      db,
+      pickRandomItem: (items) => items[0],
+    });
+    await runtime.start(3000);
+
+    const firstStop = runtime.stop();
+    const secondStop = runtime.stop();
+
+    expect(firstStop).toBe(secondStop);
+    await Promise.all([firstStop, secondStop]);
+
+    expect(stop).toHaveBeenCalledOnce();
+    expect(db.open).toBe(false);
+  });
+
+  it('Slack Appの停止に失敗してもDB接続を閉じる', async () => {
+    const error = new Error('stop failed');
+    stop.mockRejectedValue(error);
+    const runtime = createApplicationRuntime({
+      app,
+      db,
+      pickRandomItem: (items) => items[0],
+    });
+    await runtime.start(3000);
+
+    await expect(runtime.stop()).rejects.toBe(error);
+
+    expect(db.open).toBe(false);
   });
 });

@@ -8,7 +8,7 @@ const logger = createLogger('database');
 const defaultDatabasePath = (): string => path.resolve(process.cwd(), 'data', 'trrbot.db');
 
 /**
- * アプリケーションで共有するデータベース接続を開く
+ * 新しいデータベース接続を開く
  */
 export const openDatabase = (dbPath: string = defaultDatabasePath()): Database.Database => {
   if (dbPath !== ':memory:') {

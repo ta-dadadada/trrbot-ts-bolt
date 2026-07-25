@@ -30,6 +30,15 @@ describe('SqliteReactionMappingRepository', () => {
     ]);
   });
 
+  it('SQLiteの未指定順序に依存せず登録順で一覧取得する', () => {
+    const firstId = repository.create('first', ':one:');
+    const secondId = repository.create('second', ':two:');
+    const thirdId = repository.create('third', ':three:');
+    db.pragma('reverse_unordered_selects = ON');
+
+    expect(repository.getAll().map(({ id }) => id)).toEqual([firstId, secondId, thirdId]);
+  });
+
   it('トリガーとリアクションの組み合わせで削除する', () => {
     repository.create('hello', ':wave:');
 

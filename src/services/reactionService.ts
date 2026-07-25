@@ -21,15 +21,18 @@ export class ReactionService implements ReactionOperations {
   findMatchingMappings(messageText: string): ReactionMapping[] {
     const allMappings = this.repository.getAll();
     const seenReactions = new Set<string>();
+    const matchingMappings: ReactionMapping[] = [];
 
-    return allMappings.filter((mapping) => {
+    for (const mapping of allMappings) {
       if (!messageText.includes(mapping.triggerText) || seenReactions.has(mapping.reaction)) {
-        return false;
+        continue;
       }
 
       seenReactions.add(mapping.reaction);
-      return true;
-    });
+      matchingMappings.push(mapping);
+    }
+
+    return matchingMappings;
   }
 
   addReactionMapping(triggerText: string, reaction: string): number {
