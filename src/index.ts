@@ -1,60 +1,48 @@
-import app from './app';
-import { createCommandRegistry } from './commands';
-import { createCommandRouter } from './commands/router';
-import { closeDatabase, openDatabase } from './db/connection';
-import { initializeSchema } from './db/schema';
-import { registerMessageHandlers } from './handlers/messageHandler';
-import { registerMentionHandlers } from './handlers/mentionHandler';
-import { SqliteGroupRepository } from './repositories/sqliteGroupRepository';
-import { SqliteReactionMappingRepository } from './repositories/sqliteReactionMappingRepository';
-import { GroupService } from './services/groupService';
-import { ReactionService } from './services/reactionService';
-import { createLogger } from './utils/logger';
+import 'dotenv/config';
+import { createSlackApp } from './app';
+import { AppConfigurationError, loadAppConfig } from './config/appConfig';
+import { openDatabase } from './db/connection';
+import { createApplicationRuntime } from './runtime';
+import { createLogger, logger as slackLogger } from './utils/logger';
 import { getRandomItem } from './utils/random';
 
-const logger = createLogger('app');
+const appLogger = createLogger('app');
 
-// アプリの起動
-(async () => {
+async function main(): Promise<void> {
   try {
+    const config = loadAppConfig(process.env);
+    const app = createSlackApp(config, slackLogger);
     const db = openDatabase();
-    initializeSchema(db);
+    const runtime = createApplicationRuntime({ app, db, pickRandomItem: getRandomItem });
 
-    const groupService = new GroupService(new SqliteGroupRepository(db), getRandomItem);
-    const reactionService = new ReactionService(new SqliteReactionMappingRepository(db));
-    const commandRegistry = createCommandRegistry({ groupService, reactionService });
-    const processCommand = createCommandRouter(commandRegistry.resolveCommand);
+    const shutdown = (signal: 'SIGINT' | 'SIGTERM'): never => {
+      appLogger.info(`アプリを終了します（${signal}）`);
+      runtime.stop();
+      process.exit(0);
+    };
 
-    // メッセージハンドラの登録
-    registerMessageHandlers(app, { processCommand, reactionService });
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-    // メンションハンドラの登録
-    registerMentionHandlers(app, { processCommand });
-
-    const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
-    await app.start(port);
-    logger.info('Boltアプリ起動', {
-      port,
-      mode: process.env.SLACK_SOCKET_MODE !== 'false' ? 'socket' : 'http',
+    await runtime.start(config.port);
+    appLogger.info('Boltアプリ起動', {
+      port: config.port,
+      mode: config.socketMode ? 'socket' : 'http',
     });
   } catch (error) {
-    logger.error('アプリ起動失敗', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    closeDatabase();
+    if (error instanceof AppConfigurationError) {
+      slackLogger.error(error.message, {
+        required: error.required,
+        socketMode: error.socketMode,
+      });
+    } else {
+      appLogger.error('アプリ起動失敗', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
     process.exit(1);
   }
-})();
+}
 
-// プロセス終了時の処理
-process.on('SIGINT', () => {
-  logger.info('アプリを終了します（SIGINT）');
-  closeDatabase();
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  logger.info('アプリを終了します（SIGTERM）');
-  closeDatabase();
-  process.exit(0);
-});
+void main();

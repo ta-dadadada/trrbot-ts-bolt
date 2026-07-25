@@ -1,95 +1,80 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { App } from '@slack/bolt';
-import dotenv from 'dotenv';
+import type { Logger } from '@slack/logger';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AppConfig } from './config/appConfig';
 
-// モックの作成
-vi.mock('@slack/bolt', () => {
-  const MockApp = vi.fn().mockImplementation(function () {
-    return {
-      message: vi.fn().mockReturnThis(),
-      event: vi.fn().mockReturnThis(),
-      start: vi.fn().mockResolvedValue(undefined),
-    };
-  });
-  return { App: MockApp };
+const { appConstructor, appInstance } = vi.hoisted(() => {
+  const appInstance = {
+    message: vi.fn(),
+    event: vi.fn(),
+    start: vi.fn().mockResolvedValue(undefined),
+  };
+
+  return {
+    appConstructor: vi.fn(function MockApp() {
+      return appInstance;
+    }),
+    appInstance,
+  };
 });
 
-vi.mock('dotenv', () => ({
-  default: {
-    config: vi.fn(),
-  },
+vi.mock('@slack/bolt', () => ({
+  App: appConstructor,
 }));
 
-describe('Slackアプリケーション', () => {
-  // 各テスト前に環境をクリーンアップ
+import { createSlackApp } from './app';
+
+const logger = {
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  setLevel: vi.fn(),
+  getLevel: vi.fn(),
+  setName: vi.fn(),
+} as unknown as Logger;
+
+const baseConfig: AppConfig = {
+  botToken: 'test-bot-token',
+  signingSecret: 'test-signing-secret',
+  appToken: 'test-app-token',
+  socketMode: true,
+  port: 3000,
+};
+
+describe('createSlackApp', () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
-    process.env.SLACK_BOT_TOKEN = 'test-bot-token';
-    process.env.SLACK_SIGNING_SECRET = 'test-signing-secret';
-    process.env.SLACK_APP_TOKEN = 'test-app-token';
   });
 
-  // 各テスト後に環境変数をクリア
-  afterEach(() => {
-    delete process.env.SLACK_BOT_TOKEN;
-    delete process.env.SLACK_SIGNING_SECRET;
-    delete process.env.SLACK_APP_TOKEN;
-    delete process.env.SLACK_SOCKET_MODE;
-  });
+  it('Socket Mode設定からSlack Appを作成する', () => {
+    const app = createSlackApp(baseConfig, logger);
 
-  it('Slackアプリが正しく初期化されること', () => {
-    // dotenvの設定を手動で呼び出す
-    dotenv.config();
-
-    // Slackアプリの初期化をシミュレート
-    const app = new App({
-      token: process.env.SLACK_BOT_TOKEN,
-      signingSecret: process.env.SLACK_SIGNING_SECRET,
-      socketMode: process.env.SLACK_SOCKET_MODE !== 'false',
-      appToken: process.env.SLACK_APP_TOKEN,
-    });
-
-    // dotenv.configが呼ばれたことを確認
-    expect(dotenv.config).toHaveBeenCalled();
-
-    // Appコンストラクタが正しいパラメータで呼ばれたか確認
-    expect(App).toHaveBeenCalledWith({
+    expect(appConstructor).toHaveBeenCalledWith({
       token: 'test-bot-token',
       signingSecret: 'test-signing-secret',
       socketMode: true,
       appToken: 'test-app-token',
+      logger,
     });
-
-    // appオブジェクトが正しく作成されたことを確認
-    expect(app).toBeDefined();
+    expect(app).toBe(appInstance);
   });
 
-  it('SLACK_SOCKET_MODE=falseに設定したときに`socketMode: false`に設定されること', () => {
-    // dotenvの設定を手動で呼び出す
-    dotenv.config();
-    process.env.SLACK_SOCKET_MODE = 'false';
+  it('HTTP Mode設定では未指定のApp Tokenをそのまま渡す', () => {
+    createSlackApp(
+      {
+        ...baseConfig,
+        appToken: undefined,
+        socketMode: false,
+      },
+      logger,
+    );
 
-    // Slackアプリの初期化をシミュレート
-    const app = new App({
-      token: process.env.SLACK_BOT_TOKEN,
-      signingSecret: process.env.SLACK_SIGNING_SECRET,
-      socketMode: process.env.SLACK_SOCKET_MODE !== 'false',
-      appToken: process.env.SLACK_APP_TOKEN,
-    });
-
-    // dotenv.configが呼ばれたことを確認
-    expect(dotenv.config).toHaveBeenCalled();
-
-    // Appコンストラクタが正しいパラメータで呼ばれたか確認
-    expect(App).toHaveBeenCalledWith({
+    expect(appConstructor).toHaveBeenCalledWith({
       token: 'test-bot-token',
       signingSecret: 'test-signing-secret',
       socketMode: false,
-      appToken: 'test-app-token',
+      appToken: undefined,
+      logger,
     });
-
-    // appオブジェクトが正しく作成されたことを確認
-    expect(app).toBeDefined();
   });
 });
