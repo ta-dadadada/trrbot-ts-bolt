@@ -15,14 +15,26 @@ async function main(): Promise<void> {
     const db = openDatabase();
     const runtime = createApplicationRuntime({ app, db, pickRandomItem: getRandomItem });
 
-    const shutdown = (signal: 'SIGINT' | 'SIGTERM'): never => {
+    const shutdown = async (signal: 'SIGINT' | 'SIGTERM'): Promise<never> => {
       appLogger.info(`アプリを終了します（${signal}）`);
-      runtime.stop();
-      process.exit(0);
+
+      try {
+        await runtime.stop();
+        process.exit(0);
+      } catch (error) {
+        appLogger.error('アプリ終了失敗', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        process.exit(1);
+      }
     };
 
-    process.on('SIGINT', () => shutdown('SIGINT'));
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => {
+      void shutdown('SIGINT');
+    });
+    process.on('SIGTERM', () => {
+      void shutdown('SIGTERM');
+    });
 
     await runtime.start(config.port);
     appLogger.info('Boltアプリ起動', {

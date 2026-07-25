@@ -19,7 +19,7 @@ export interface ApplicationRuntimeDependencies {
 
 export interface ApplicationRuntime {
   start(port: number): Promise<void>;
-  stop(): void;
+  stop(): Promise<void>;
 }
 
 /**
@@ -29,15 +29,23 @@ export function createApplicationRuntime(
   dependencies: ApplicationRuntimeDependencies,
 ): ApplicationRuntime {
   const { app, db, pickRandomItem } = dependencies;
-  let stopped = false;
+  let started = false;
+  let stopPromise: Promise<void> | undefined;
 
-  const stop = (): void => {
-    if (stopped) {
-      return;
+  const stop = (): Promise<void> => {
+    if (stopPromise === undefined) {
+      stopPromise = (async () => {
+        try {
+          if (started) {
+            await app.stop();
+          }
+        } finally {
+          closeDatabase(db);
+        }
+      })();
     }
 
-    stopped = true;
-    closeDatabase(db);
+    return stopPromise;
   };
 
   try {
@@ -51,7 +59,7 @@ export function createApplicationRuntime(
     registerMessageHandlers(app, { processCommand, reactionService });
     registerMentionHandlers(app, { processCommand });
   } catch (error) {
-    stop();
+    closeDatabase(db);
     throw error;
   }
 
@@ -59,8 +67,9 @@ export function createApplicationRuntime(
     async start(port: number): Promise<void> {
       try {
         await app.start(port);
+        started = true;
       } catch (error) {
-        stop();
+        await stop();
         throw error;
       }
     },

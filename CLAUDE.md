@@ -37,7 +37,7 @@ npx vitest run src/path/to/file.spec.ts
 1. **Entry Point** (`src/index.ts`): `.env`を読み込み、起動設定、Slack App、DB接続、Application Runtimeを生成し、プロセスシグナルを処理する
 2. **App Configuration** (`src/config/appConfig.ts`): 環境変数を副作用のない起動設定へ変換する
 3. **Slack App Factory** (`src/app.ts`): 起動設定とLoggerからBolt Appを生成する
-4. **Application Runtime** (`src/runtime.ts`): Repository、Service、Command、Handlerを組み立て、起動とDB接続の終了を管理する
+4. **Application Runtime** (`src/runtime.ts`): Repository、Service、Command、Handlerを組み立て、Slack AppとDB接続のライフサイクルを管理する
 5. **Event Handlers**: Two main handler types registered at startup:
    - `mentionHandler`: Processes `app_mention` events
    - `messageHandler`: Handles all message events for DMs (processes as commands) and channel messages (applies automatic reactions)
