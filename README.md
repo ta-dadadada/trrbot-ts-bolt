@@ -110,7 +110,7 @@ git push --no-verify
 
 - **依存関係スキャン**: PRと`main`へのpushで、開発依存を含むnpm依存関係を検査
 - **CIゲート**: 修正版が存在するHIGHまたはCRITICALの脆弱性を検出した場合、CIを失敗させます
-- **GitHub連携**: 検査結果をGitHub Code Scanningへ送信し、Securityタブで管理
+- **GitHub連携**: 検査結果をGitHub Code Scanningへ送信し、Securityタブで管理。forkからのPRでは権限制約によりSARIF送信をスキップしますが、脆弱性検査とCIゲートは実行します
 
 #### Secret Scanning
 
