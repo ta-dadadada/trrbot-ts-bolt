@@ -74,7 +74,7 @@ Commands follow a class-based pattern implementing the `Command` interface (`src
 
 ### Socket Mode vs HTTP Mode
 
-The bot defaults to Socket Mode (WebSocket connection) but can switch to HTTP mode by setting `SLACK_SOCKET_MODE=false` in environment variables.
+ボットは既定でSocket Mode（WebSocket接続）を使用する。`SLACK_SOCKET_MODE` は `"true"` または `"false"` のみ受理し、`"false"` の場合はHTTP Modeを使用する。
 
 ### Build System
 
@@ -258,6 +258,6 @@ Required variables (see `.env.example`):
 - `SLACK_BOT_TOKEN`: Bot User OAuth Token
 - `SLACK_SIGNING_SECRET`: Signing secret from Slack
 - `SLACK_APP_TOKEN`: App-level token (required for Socket Mode)
-- `SLACK_SOCKET_MODE`: Set to `false` to use HTTP mode instead of Socket Mode (optional, defaults to true)
-- `PORT`: Port for HTTP server (default: 3000)
+- `SLACK_SOCKET_MODE`: `"true"` または `"false"`（省略時は `"true"`）
+- `PORT`: HTTPサーバーのポート番号。1〜65535の10進整数（省略時は `3000`）
 - `BOT_MENTION_NAME`: Bot mention name for help display (default: @trrbot)
