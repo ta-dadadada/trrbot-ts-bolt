@@ -185,6 +185,7 @@ cp .env.example .env
 SLACK_BOT_TOKEN=xoxb-your-bot-token
 SLACK_SIGNING_SECRET=your-signing-secret
 SLACK_APP_TOKEN=xapp-your-app-token
+SLACK_SOCKET_MODE=true
 PORT=3000
 LOG_LEVEL=info  # オプション: trace | debug | info | warn | error | fatal | silent（デフォルト: info）
 ```
@@ -194,7 +195,8 @@ LOG_LEVEL=info  # オプション: trace | debug | info | warn | error | fatal |
 - `SLACK_BOT_TOKEN`: Slack Bot User OAuth Token（必須）
 - `SLACK_SIGNING_SECRET`: Slack Signing Secret（必須）
 - `SLACK_APP_TOKEN`: Slack App-Level Token（Socket Mode使用時に必須）
-- `PORT`: HTTPサーバーのポート番号（デフォルト: 3000）
+- `SLACK_SOCKET_MODE`: `"true"` または `"false"`（デフォルト: `"true"`）
+- `PORT`: HTTPサーバーのポート番号。1〜65535の10進整数（デフォルト: `3000`）
 - `BOT_MENTION_NAME`: ヘルプメッセージ表示用のボットメンション名（デフォルト: @trrbot）
 - `LOG_LEVEL`: ログ出力レベル（オプション、大文字・小文字どちらでも可）
   - `trace`: 最も詳細なログ（パフォーマンストレース用）
@@ -285,7 +287,7 @@ docker-compose down -v
 
 このアプリはデフォルトではHTTPエンドポイントを公開せずに動作するため、「Socket Mode」をオンにします。これにより、WebSocketを使用してSlack APIと通信します。
 
-環境変数`SLACK_SOCKET_MODE=false`を設定した場合Socket Modeを利用しないHTTPベースでイベントを受け取る構成で起動します。
+環境変数 `SLACK_SOCKET_MODE` は未設定時に `"true"` として扱われます。`"false"` を設定すると、Socket Modeを利用しないHTTPベースでイベントを受け取る構成で起動します。それ以外の値は設定エラーになります。HTTP Modeでは `SLACK_APP_TOKEN` は不要です。
 
 ### トークンの取得
 

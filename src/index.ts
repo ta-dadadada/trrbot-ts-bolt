@@ -32,8 +32,8 @@ async function main(): Promise<void> {
   } catch (error) {
     if (error instanceof AppConfigurationError) {
       slackLogger.error(error.message, {
-        required: error.required,
-        socketMode: error.socketMode,
+        variable: error.variable,
+        reason: error.reason,
       });
     } else {
       appLogger.error('アプリ起動失敗', {
