@@ -93,7 +93,7 @@ Commands follow a class-based pattern implementing the `Command` interface (`src
 ### Code Quality
 
 - **TypeScript** with strict mode enabled
-- **Oxlint** with type-aware correctness and suspicious rules (`.oxlintrc.json`)
+- **Oxlint** with type-aware correctness rules (`.oxlintrc.json`)
 - **Oxfmt** for repository-wide formatting (`.oxfmtrc.json`)
 - **TypeScript 7** for independent type checking with `tsc --noEmit`
 
