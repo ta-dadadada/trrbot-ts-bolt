@@ -7,7 +7,7 @@ export const getRandomItem = <T>(items: T[]): T | undefined => {
   if (items.length === 0) {
     return undefined;
   }
-  
+
   const randomIndex = Math.floor(Math.random() * items.length);
   return items[randomIndex];
 };
@@ -32,14 +32,14 @@ export const getRandomInt = (min: number, max: number): number => {
 export const shuffleArray = <T>(array: T[]): T[] => {
   // 元の配列をコピーして新しい配列を作成
   const shuffled = [...array];
-  
+
   // Fisher-Yatesアルゴリズムでシャッフル
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     // 要素を入れ替え
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  
+
   return shuffled;
 };
 
@@ -51,12 +51,12 @@ export const shuffleArray = <T>(array: T[]): T[] => {
 export const getRandomString = (length: number): string => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
-  
+
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * characters.length);
     result += characters.charAt(randomIndex);
   }
-  
+
   return result;
 };
 
@@ -66,14 +66,15 @@ export const getRandomString = (length: number): string => {
  * @returns ランダムな英数字と記号を含む文字列
  */
 export const getRandomStringWithSymbols = (length: number): string => {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+  const characters =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
   let result = '';
-  
+
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * characters.length);
     result += characters.charAt(randomIndex);
   }
-  
+
   return result;
 };
 

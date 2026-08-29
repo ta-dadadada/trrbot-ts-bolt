@@ -4,9 +4,9 @@
 
 This is a personal Slack bot project. Only the latest version under active development is supported.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| latest  | :white_check_mark: |
+| Version  | Supported          |
+| -------- | ------------------ |
+| latest   | :white_check_mark: |
 | < latest | :x:                |
 
 ## Reporting a Vulnerability
