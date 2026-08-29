@@ -2,6 +2,9 @@ import pino from 'pino';
 import type { Logger as BoltLogger } from '@slack/logger';
 import { LogLevel } from '@slack/logger';
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
 /**
  * Pino loggerインスタンスを作成（環境変数を考慮）
  */
@@ -112,9 +115,12 @@ class PinoBoltLogger implements BoltLogger {
     // 単一引数: JSON文字列の場合はパースして返す（errorHandlerとの互換性）
     if (args.length === 1 && typeof args[0] === 'string') {
       try {
-        const parsed = JSON.parse(args[0]);
-        // パース成功: オブジェクトとして返す
-        return parsed as Record<string, unknown>;
+        const parsed: unknown = JSON.parse(args[0]);
+        // パース成功: オブジェクトの場合のみそのまま返す
+        if (isRecord(parsed)) {
+          return parsed;
+        }
+        return { message: args[0] };
       } catch {
         // パース失敗: 通常の文字列メッセージとして扱う
         return { message: args[0] };
@@ -122,18 +128,13 @@ class PinoBoltLogger implements BoltLogger {
     }
 
     // 単一引数: オブジェクトの場合はそのまま
-    if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null) {
-      return args[0] as Record<string, unknown>;
+    if (args.length === 1 && isRecord(args[0])) {
+      return args[0];
     }
 
     // 複数引数: 最初の引数が文字列で、2番目がオブジェクトの場合はマージ
-    if (
-      args.length === 2 &&
-      typeof args[0] === 'string' &&
-      typeof args[1] === 'object' &&
-      args[1] !== null
-    ) {
-      return { message: args[0], ...(args[1] as Record<string, unknown>) };
+    if (args.length === 2 && typeof args[0] === 'string' && isRecord(args[1])) {
+      return { message: args[0], ...args[1] };
     }
 
     // その他の複数引数: 最初をmessage、残りをdataとして

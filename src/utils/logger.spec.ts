@@ -156,5 +156,10 @@ describe('Pino-based logger', () => {
       const jsonString = JSON.stringify({ message: 'JSON message', key: 'value' });
       expect(() => testLogger.info(jsonString)).not.toThrow();
     });
+
+    it('should handle non-object JSON messages', () => {
+      const testLogger = createLogger('format-test');
+      expect(() => testLogger.info(JSON.stringify('JSON string message'))).not.toThrow();
+    });
   });
 });

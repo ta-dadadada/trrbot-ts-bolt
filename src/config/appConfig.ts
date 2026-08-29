@@ -7,7 +7,11 @@ export interface AppConfig {
 }
 
 type AppConfigVariable =
-  'SLACK_BOT_TOKEN' | 'SLACK_SIGNING_SECRET' | 'SLACK_APP_TOKEN' | 'SLACK_SOCKET_MODE' | 'PORT';
+  | 'SLACK_BOT_TOKEN'
+  | 'SLACK_SIGNING_SECRET'
+  | 'SLACK_APP_TOKEN'
+  | 'SLACK_SOCKET_MODE'
+  | 'PORT';
 
 export class AppConfigurationError extends Error {
   constructor(

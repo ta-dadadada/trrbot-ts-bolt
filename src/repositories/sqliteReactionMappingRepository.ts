@@ -15,7 +15,7 @@ export class SqliteReactionMappingRepository implements ReactionMappingRepositor
   constructor(private readonly db: Database.Database) {}
 
   getAll(): ReactionMapping[] {
-    const statement = this.db.prepare(`
+    const statement = this.db.prepare<[], ReactionMapping>(`
       SELECT
         id,
         trigger_text as triggerText,
@@ -27,16 +27,16 @@ export class SqliteReactionMappingRepository implements ReactionMappingRepositor
       ORDER BY id ASC
     `);
 
-    return statement.all() as ReactionMapping[];
+    return statement.all();
   }
 
   create(triggerText: string, reaction: string): number {
-    const statement = this.db.prepare(`
+    const statement = this.db.prepare<[string, string]>(`
       INSERT INTO reaction_mappings (trigger_text, reaction)
       VALUES (?, ?)
     `);
     const result = statement.run(triggerText, reaction);
-    return result.lastInsertRowid as number;
+    return Number(result.lastInsertRowid);
   }
 
   deleteByTriggerAndReaction(triggerText: string, reaction: string): boolean {

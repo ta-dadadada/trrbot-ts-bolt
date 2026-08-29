@@ -20,6 +20,7 @@ trrbot-ts-bolt is a TypeScript-based Slack bot built with the Slack Bolt framewo
 - **Run tests in watch mode**: `npm test:watch`
 - **Lint code**: `npm run lint`
 - **Format code**: `npm run format`
+- **Check formatting**: `npm run format:check`
 
 ### Running Single Tests
 
@@ -92,9 +93,9 @@ Commands follow a class-based pattern implementing the `Command` interface (`src
 ### Code Quality
 
 - **TypeScript** with strict mode enabled
-- **ESLint** using flat config format (`eslint.config.js`)
-- **Prettier** for formatting
-- `@typescript-eslint/no-explicit-any` is enforced as error
+- **Oxlint** with type-aware correctness rules (`.oxlintrc.json`)
+- **Oxfmt** for repository-wide formatting (`.oxfmtrc.json`)
+- **TypeScript 7** for independent type checking with `tsc --noEmit`
 
 ### Type Safety
 
@@ -190,9 +191,9 @@ async execute(context: CommandContext): Promise<void> {
 
 This project uses Git Hooks to ensure code quality:
 
-- **pre-commit**: Runs `lint-staged` to automatically lint and format staged TypeScript files
-  - ESLint with `--fix` flag
-  - Prettier formatting
+- **pre-commit**: Runs `lint-staged` to automatically lint and format staged files
+  - Oxlint with `--fix` for JavaScript and TypeScript files
+  - Oxfmt for supported files
 - **pre-push**: Runs `npm test` to ensure all tests pass before pushing
 - **commit-msg**: Validates commit messages using `commitlint` (Conventional Commits format)
 

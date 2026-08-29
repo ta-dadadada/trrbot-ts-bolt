@@ -1,71 +1,74 @@
 version: 2
 updates:
   # npm依存関係の更新
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Tokyo'
     commit-message:
-      prefix: "chore(deps)"
-      prefix-development: "chore(deps-dev)"
-      include: "scope"
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
+      include: 'scope'
     versioning-strategy: increase
     open-pull-requests-limit: 10
     cooldown:
       default-days: 3
     labels:
-      - "dependencies"
-      - "npm"
+      - 'dependencies'
+      - 'npm'
     ignore:
-      # Node.js v24 LTSに固定するため、@types/nodeのメジャーバージョンアップを抑止
-      - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
+      # Node.js v26系に固定するため、@types/nodeのメジャーバージョンアップを抑止
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       # 開発依存関係をグループ化（patch/minorのみ）
       development-dependencies:
-        dependency-type: "development"
+        dependency-type: 'development'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       # Slack Bolt関連をグループ化
       slack:
         patterns:
-          - "@slack/*"
+          - '@slack/*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       # テスト・ビルドツールをグループ化
       build-tools:
         patterns:
-          - "vite"
-          - "vitest"
-          - "@vitest/*"
-          - "typescript"
+          - 'vite'
+          - 'vitest'
+          - '@vitest/*'
+          - 'typescript'
+          - 'oxlint'
+          - 'oxlint-tsgolint'
+          - 'oxfmt'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
 
   # GitHub Actions依存関係の更新
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Tokyo'
     commit-message:
-      prefix: "chore(ci)"
+      prefix: 'chore(ci)'
     open-pull-requests-limit: 5
     cooldown:
       default-days: 3
     labels:
-      - "dependencies"
-      - "github-actions"
+      - 'dependencies'
+      - 'github-actions'
     groups:
       # GitHub Actionsを全てグループ化
       github-actions:
         patterns:
-          - "*"
+          - '*'
