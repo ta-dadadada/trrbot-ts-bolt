@@ -12,6 +12,9 @@ dist
 # テスト関連
 coverage
 
+# CI生成物
+*.sarif
+
 # データディレクトリ
 data
 trrbot-data

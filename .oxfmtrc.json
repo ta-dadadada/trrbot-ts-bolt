@@ -7,5 +7,5 @@
   "tabWidth": 2,
   "endOfLine": "lf",
   "sortPackageJson": false,
-  "ignorePatterns": []
+  "ignorePatterns": ["*.sarif"]
 }
