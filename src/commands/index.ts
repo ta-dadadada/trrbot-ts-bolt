@@ -35,7 +35,7 @@ export interface CommandDependencies {
 
 export interface CommandRegistry {
   commandRegistrations: readonly CommandRegistration[];
-  resolveCommand(commandName: string): CommandResolution;
+  resolveCommand: (commandName: string) => CommandResolution;
 }
 
 function normalizeCommandName(name: string): string {

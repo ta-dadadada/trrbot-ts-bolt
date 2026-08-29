@@ -10,7 +10,7 @@ export default defineConfig({
     // ライブラリモードで構築
     lib: {
       // エントリーポイント
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: resolve(import.meta.dirname, 'src/index.ts'),
       // 出力ファイル名
       name: 'trrbot',
       // 出力形式
@@ -43,7 +43,7 @@ export default defineConfig({
       },
     },
     // Node.js 環境向けの最適化
-    target: 'node16',
+    target: 'node26',
     // ミニファイしない
     minify: false,
   },

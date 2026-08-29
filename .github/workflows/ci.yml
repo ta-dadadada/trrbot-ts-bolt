@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -46,11 +46,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: '24'
+          node-version: '26'
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - name: Run ESLint
+      - name: Check formatting
+        run: npm run format:check
+      - name: Run Oxlint and type check
         run: npm run lint
       - name: Run tests
         run: npm test

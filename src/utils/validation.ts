@@ -5,7 +5,7 @@ import { ValidationError } from './errors';
  * 制御文字は \u0000-\u001F と \u007F-\u009F の範囲
  * 改行(\n=\u000A, \r=\u000D)とタブ(\t=\u0009)は除外
  */
-// eslint-disable-next-line no-control-regex
+// oxlint-disable-next-line no-control-regex -- 制御文字の検出が目的の正規表現
 const CONTROL_CHAR_PATTERN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/;
 
 // 既存のimport文との互換性のため、ValidationErrorを再エクスポート

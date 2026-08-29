@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppConfig } from './config/appConfig';
 
 const { appConstructor, appInstance } = vi.hoisted(() => {
-  const appInstance = {
+  const mockAppInstance = {
     message: vi.fn(),
     event: vi.fn(),
     start: vi.fn().mockResolvedValue(undefined),
@@ -11,9 +11,9 @@ const { appConstructor, appInstance } = vi.hoisted(() => {
 
   return {
     appConstructor: vi.fn(function MockApp() {
-      return appInstance;
+      return mockAppInstance;
     }),
-    appInstance,
+    appInstance: mockAppInstance,
   };
 });
 

@@ -3,6 +3,12 @@ import type { SlackEvent, SayFunction, CommandContext } from './types';
 import type { GenericMessageEvent } from '@slack/types';
 import type { ChatPostMessageResponse } from '@slack/web-api';
 
+const say: SayFunction = async () => ({
+  ok: true,
+  channel: 'C123',
+  ts: '123.456',
+});
+
 describe('Type definitions', () => {
   describe('SlackEvent', () => {
     it('should be compatible with GenericMessageEvent', () => {
@@ -45,22 +51,12 @@ describe('Type definitions', () => {
 
   describe('SayFunction', () => {
     it('should accept string messages', async () => {
-      const say: SayFunction = async () => ({
-        ok: true,
-        channel: 'C123',
-        ts: '123.456',
-      });
       const result = await say('test message');
       expect(result.ok).toBe(true);
       expect(result.channel).toBe('C123');
     });
 
     it('should accept message objects', async () => {
-      const say: SayFunction = async () => ({
-        ok: true,
-        channel: 'C123',
-        ts: '123.456',
-      });
       const result = await say({ text: 'test message' });
       expect(result.ok).toBe(true);
       expect(result.channel).toBe('C123');

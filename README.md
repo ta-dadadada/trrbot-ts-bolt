@@ -32,14 +32,24 @@ npm test
 
 ## 開発者向け情報
 
+### Node.js
+
+[Node.jsのリリーススケジュール](https://nodejs.org/en/about/previous-releases)に基づき、Node.js 26系を使用します。2026年8月時点ではCurrentリリースで、2026年10月にLTSへ移行する予定です。
+
 ### TypeScript
 
-[TypeScript 7.0の公式案内](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/)にあるとおり、TypeScript 7.0はプログラムAPIを提供していないため、互換構成として2つのコンパイラーパッケージを併用しています。
+[TypeScript 7.0の公式案内](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/)にあるネイティブコンパイラーを使用しています。
 
-- `@typescript/native`: TypeScript 7の`tsc`を提供し、型検査に使用
-- `typescript`: `typescript-eslint`が必要とするTypeScript 6のAPIを提供
+- `typescript`: TypeScript 7の`tsc`を提供し、`tsc --noEmit`による型検査に使用
+- `oxlint-tsgolint`: TypeScript 7を基盤とするOxlintの型情報Lintに使用
 
-TypeScript 7.1以降でプログラムAPIと`typescript-eslint`の対応状況を確認し、互換パッケージが不要になった時点で構成を見直します。
+コード品質チェックにはOxlint、フォーマットにはOxfmtを使用します。
+
+```bash
+npm run lint
+npm run format
+npm run format:check
+```
 
 ### Git Hooks
 
@@ -49,10 +59,10 @@ TypeScript 7.1以降でプログラムAPIと`typescript-eslint`の対応状況�
 
 コミット前に以下の処理が自動実行されます：
 
-- **ESLint**: コードの静的解析と自動修正
-- **Prettier**: コードフォーマットの自動適用
+- **Oxlint**: JavaScript・TypeScriptの静的解析と安全な自動修正
+- **Oxfmt**: 対応するファイルのコードフォーマットを自動適用
 
-これにより、ステージされたTypeScriptファイルのみがチェック・修正されます。
+これにより、ステージされたJavaScript・TypeScriptファイルはLintとフォーマット、それ以外のOxfmt対応ファイルはフォーマットが実行されます。
 
 #### pre-push
 
