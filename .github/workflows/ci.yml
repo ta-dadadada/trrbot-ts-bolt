@@ -70,3 +70,11 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
           category: 'trivy-npm'
+
+  dependabot-auto-merge:
+    needs: [quality, security]
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/dependabot-auto-merge.yml
