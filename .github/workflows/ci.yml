@@ -61,6 +61,8 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'HIGH,CRITICAL'
+          # Keep SARIF output and the failure gate aligned with severity.
+          limit-severities-for-sarif: 'true'
           ignore-unfixed: 'true'
           exit-code: '1'
           cache: 'true'
