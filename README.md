@@ -34,7 +34,12 @@ npm test
 
 ### Node.js
 
-[Node.jsのリリーススケジュール](https://nodejs.org/en/about/previous-releases)に基づき、Node.js 26系を使用します。2026年8月時点ではCurrentリリースで、2026年10月にLTSへ移行する予定です。
+Node.js 26.12.1以上、27未満を使用します。ローカル開発の使用バージョンは`mise.toml`、CIは`.node-version`、Dockerは`Dockerfile`に指定しています。これらのバージョンは揃えて更新してください。
+
+```bash
+mise install
+mise exec -- node --version
+```
 
 ### TypeScript
 
