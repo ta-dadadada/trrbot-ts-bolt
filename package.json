@@ -19,29 +19,29 @@
   "license": "MIT",
   "description": "Slack Bolt アプリケーション（TypeScript）",
   "engines": {
-    "node": ">=26 <27"
+    "node": ">=26.12.1 <27"
   },
   "dependencies": {
     "@slack/bolt": "^5.1.0",
     "better-sqlite3": "^13.0.3",
     "csv-stringify": "^6.9.0",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.9",
     "pino": "^10.4.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.3",
-    "@commitlint/config-conventional": "^21.0.2",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.6.5",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
-    "oxfmt": "^0.73.0",
-    "oxlint": "^1.88.0",
-    "oxlint-tsgolint": "^7.0.2004",
+    "oxfmt": "^0.74.0",
+    "oxlint": "^1.89.0",
+    "oxlint-tsgolint": "^7.0.2005",
     "pino-pretty": "^13.2.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vite": "^8.3.4",
+    "vite": "^8.3.5",
     "vitest": "^5.0.5"
   },
   "overrides": {
